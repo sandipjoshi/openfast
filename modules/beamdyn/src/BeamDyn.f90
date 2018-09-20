@@ -1604,9 +1604,9 @@ subroutine Init_MiscVars( p, u, y, m, ErrStat, ErrMsg )
          !  Arrays for use with LAPACK matrix solve routines (A*X = B solve for X)
          !     -  m%LP_StifK_LU  -  matrix A in solve
          !     -  m%LP_RHS_LU    -  array B in call, solution array X returned
-      CALL AllocAry(m%LP_RHS_LU,    p%dof_total-6,                                              'LP_RHS_LU',   ErrStat2,ErrMsg2); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
+      CALL AllocAry(m%LP_RHS_LU,    p%dof_total-p%dof_node,                                     'LP_RHS_LU',   ErrStat2,ErrMsg2); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
       CALL AllocAry(m%LP_RHS,       p%dof_total,                                                'LP_RHS',      ErrStat2,ErrMsg2); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-      CALL AllocAry(m%LP_StifK_LU,  p%dof_total-6,p%dof_total-6,                                'LP_StifK_LU', ErrStat2,ErrMsg2); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
+      CALL AllocAry(m%LP_StifK_LU,  p%dof_total-p%dof_node,p%dof_total-p%dof_node,              'LP_StifK_LU', ErrStat2,ErrMsg2); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
       CALL AllocAry(m%LP_StifK,     p%dof_total,p%dof_total,                                    'LP_StifK',    ErrStat2,ErrMsg2); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
       CALL AllocAry(m%LP_MassM,     p%dof_total,p%dof_total,                                    'LP_MassM',    ErrStat2,ErrMsg2); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
       CALL AllocAry(m%LP_MassM_LU,  p%dof_total-6,p%dof_total-6,                                'LP_MassM_LU', ErrStat2,ErrMsg2); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
@@ -1614,11 +1614,11 @@ subroutine Init_MiscVars( p, u, y, m, ErrStat, ErrMsg )
 
          !  LAPACK routine outputs converted to dimensionality used in BD.  Note the index ordering here is due to reshape functions before calls to LAPACK routines
          !     -  m%Solution holds the redimensioned m%LP_RHS_LU (returned X array)
-      CALL AllocAry(m%Solution,     p%dof_node, p%node_total,                                   'Solution',    ErrStat2,ErrMsg2); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-      CALL AllocAry(m%RHS,          p%dof_node,p%node_total,                                    'RHS',         ErrStat2,ErrMsg2); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-      CALL AllocAry(m%StifK,        p%dof_node,p%node_total,p%dof_node,p%node_total,            'StifK',       ErrStat2,ErrMsg2); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-      CALL AllocAry(m%MassM,        p%dof_node,p%node_total,p%dof_node,p%node_total,            'MassM',       ErrStat2,ErrMsg2); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-      CALL AllocAry(m%DampG,        p%dof_node,p%node_total,p%dof_node,p%node_total,            'DampG',       ErrStat2,ErrMsg2); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
+      CALL AllocAry(m%Solution,      p%dof_node,p%node_total,                                   'Solution',    ErrStat2,ErrMsg2); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
+      CALL AllocAry(m%RHS,           p%dof_node,p%node_total,                                   'RHS',         ErrStat2,ErrMsg2); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
+      CALL AllocAry(m%StifK,        p%dof_total,p%dof_total,                                    'StifK',       ErrStat2,ErrMsg2); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
+      CALL AllocAry(m%MassM,        p%dof_total,p%dof_total,                                    'MassM',       ErrStat2,ErrMsg2); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
+      CALL AllocAry(m%DampG,        p%dof_total,p%dof_total,                                    'DampG',       ErrStat2,ErrMsg2); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
 
       ! Arrays used in the finite differencing routines. These arrays are analogoous to the above declared analytical arrays and follow the same dimensionality
       IF ( p%tngt_stf_fd .or. p%tngt_stf_comp ) THEN
@@ -1641,9 +1641,9 @@ subroutine Init_MiscVars( p, u, y, m, ErrStat, ErrMsg )
       CALL AllocAry(m%EFint,        p%dof_node,p%nodes_per_elem,p%elem_total,    'Elastic Force internal',     ErrStat2,ErrMsg2); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
 
          ! Note the index ordering here.  This comes from the reshaping to other arrays used with LAPACK solvers
-      CALL AllocAry(m%elk,          p%dof_node,p%nodes_per_elem,p%dof_node,p%nodes_per_elem,    'elk',         ErrStat2,ErrMsg2); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-      CALL AllocAry(m%elg,          p%dof_node,p%nodes_per_elem,p%dof_node,p%nodes_per_elem,    'elg',         ErrStat2,ErrMsg2); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-      CALL AllocAry(m%elm,          p%dof_node,p%nodes_per_elem,p%dof_node,p%nodes_per_elem,    'elm',         ErrStat2,ErrMsg2); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
+      CALL AllocAry(m%elk,          p%dof_total,p%dof_total,    'elk',         ErrStat2,ErrMsg2); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
+      CALL AllocAry(m%elg,          p%dof_total,p%dof_total,    'elg',         ErrStat2,ErrMsg2); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
+      CALL AllocAry(m%elm,          p%dof_total,p%dof_total,    'elm',         ErrStat2,ErrMsg2); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
 
          ! Point loads applied to FE nodes from driver code.
       CALL AllocAry(m%PointLoadLcl, p%dof_node,p%node_total,                       'PointLoadLcl',         ErrStat2,ErrMsg2); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
@@ -3159,24 +3159,19 @@ END SUBROUTINE BD_GravityForce
 !-----------------------------------------------------------------------------------------------------------------------------------
 !> This subroutine assembles total stiffness matrix.
 SUBROUTINE BD_AssembleStiffK(nelem,p,ElemK,GlobalK)
-   INTEGER(IntKi),            INTENT(IN   )  :: nelem             !< Number of elements
-   TYPE(BD_ParameterType),    INTENT(IN   )  :: p                 !< Parameters
-   REAL(BDKi),                INTENT(IN   )  :: ElemK(:,:,:,:)    !< Element  matrix
-   REAL(BDKi),                INTENT(INOUT)  :: GlobalK(:,:,:,:)  !< Global stiffness matrix
+   INTEGER(IntKi),            INTENT(IN   )  :: nelem         !< element id
+   TYPE(BD_ParameterType),    INTENT(IN   )  :: p             !< Parameters
+   REAL(BDKi),                INTENT(IN   )  :: ElemK(:,:)    !< Element  matrix
+   REAL(BDKi),                INTENT(INOUT)  :: GlobalK(:,:)  !< Global stiffness matrix
 
-   INTEGER(IntKi)                            :: i
-   INTEGER(IntKi)                            :: j
-   INTEGER(IntKi)                            :: idx_dof2
-   INTEGER(IntKi)                            :: temp_id
+   INTEGER(IntKi)                            :: temp_id, dof_start, dof_end
 
-   temp_id = p%node_elem_idx(nelem,1)-1      ! Node just before the start of this element
-   DO j=1,p%nodes_per_elem
-      DO idx_dof2=1,p%dof_node
-         DO i=1,p%nodes_per_elem
-            GlobalK( :,i+temp_id,idx_dof2,j+temp_id ) = GlobalK( :,i+temp_id,idx_dof2,j+temp_id ) + ElemK( :,i,idx_dof2,j )
-         ENDDO
-      ENDDO
-   ENDDO
+   temp_id = p%node_elem_idx(nelem,1)-1 ! Node just before the start of this element
+
+   dof_start = temp_id*p%dof_node + 1
+   dof_end   = nelem*p%nodes_per_elem*p%dof_node
+
+   GlobalK( dof_start:dof_end, dof_start:dof_end ) = GlobalK( dof_start:dof_end, dof_start:dof_end ) + ElemK( :,: )
 
 END SUBROUTINE BD_AssembleStiffK
 
@@ -3520,7 +3515,7 @@ SUBROUTINE BD_StaticSolution( x, gravity, p, m, piter, ErrStat, ErrMsg )
       CALL BD_GenerateStaticElement(gravity, p, m) ! Calculate RHS and analytical tangent stiffness matrix
 
       ! compare the finite differenced stiffness matrix against the analytical tangent stiffness matrix is flag is set
-      IF ( p%tngt_stf_comp ) CALL BD_CompTngtStiff( RESHAPE(m%StifK   ,(/p%dof_total,p%dof_total/)), &
+      IF ( p%tngt_stf_comp ) CALL BD_CompTngtStiff( m%StifK, &
                                                     RESHAPE(m%StifK_fd,(/p%dof_total,p%dof_total/)), p%tngt_stf_difftol, &
                                                     ErrStat, ErrMsg )
       IF (ErrStat >= AbortErrLev) return
@@ -3537,9 +3532,9 @@ SUBROUTINE BD_StaticSolution( x, gravity, p, m, piter, ErrStat, ErrMsg )
 
        ! Set tangnet stiffness matrix based on flag for finite differencing
        IF ( p%tngt_stf_fd ) THEN
-           m%LP_StifK = RESHAPE(m%StifK_fd, (/p%dof_total,p%dof_total/));
+           m%LP_StifK = RESHAPE(m%StifK_fd, (/p%dof_total,p%dof_total/))
        ELSE
-           m%LP_StifK = RESHAPE(   m%StifK, (/p%dof_total,p%dof_total/));
+           m%LP_StifK = m%StifK
        ENDIF
        m%LP_StifK_LU = m%LP_StifK(7:p%dof_total,7:p%dof_total)
 
@@ -3705,9 +3700,8 @@ SUBROUTINE BD_StaticElementMatrix(  nelem, gravity, p, m )
    TYPE(BD_ParameterType),       INTENT(IN   )  :: p                 !< Parameters
    TYPE(BD_MiscVarType),         INTENT(INOUT)  :: m                 !< misc/optimization variables
 
-   INTEGER(IntKi)              :: i
-   INTEGER(IntKi)              :: j
-   INTEGER(IntKi)              :: idx_dof1, idx_dof2
+   INTEGER(IntKi)              :: i, idof_start, idof_end
+   INTEGER(IntKi)              :: j, idx_jdof, jdof
    INTEGER(IntKi)              :: idx_qp
    CHARACTER(*), PARAMETER     :: RoutineName = 'BD_StaticElementMatrix'
 
@@ -3715,29 +3709,30 @@ SUBROUTINE BD_StaticElementMatrix(  nelem, gravity, p, m )
    CALL BD_ElasticForce( nelem,p,m,.true. )     ! Calculate Fc, Fd  [and Oe, Pe, and Qe for N-R algorithm]
    CALL BD_GravityForce( nelem,p,m,gravity )    ! Calculate Fg
 
-   
+   m%elk = 0.0_BDKi
+
    DO j=1,p%nodes_per_elem
-      DO idx_dof2=1,p%dof_node
-         DO i=1,p%nodes_per_elem
-            DO idx_dof1=1,p%dof_node
-               m%elk(idx_dof1,i,idx_dof2,j) = 0.0_BDKi
-               DO idx_qp = 1,p%nqp ! dot_product( m%qp%Qe(  idx_dof1,idx_dof2,:,nelem), p%QPtw_Shp_Shp_Jac(      :,i,j,nelem)) 
-                  m%elk(idx_dof1,i,idx_dof2,j) = m%elk(idx_dof1,i,idx_dof2,j) + m%qp%Qe(  idx_dof1,idx_dof2,idx_qp,nelem)*p%QPtw_Shp_Shp_Jac(idx_qp,i,j,nelem)
-               END DO
-                  
-               DO idx_qp = 1,p%nqp ! dot_product( m%qp%Pe(  idx_dof1,idx_dof2,:,nelem), p%QPtw_Shp_ShpDer(       :,i,j)      ) 
-                  m%elk(idx_dof1,i,idx_dof2,j) = m%elk(idx_dof1,i,idx_dof2,j) + m%qp%Pe(  idx_dof1,idx_dof2,idx_qp,nelem)*p%QPtw_Shp_ShpDer(idx_qp,i,j)
-               END DO
-               DO idx_qp = 1,p%nqp ! dot_product( m%qp%Oe(  idx_dof1,idx_dof2,:,nelem), p%QPtw_Shp_ShpDer(       :,j,i)      ) 
-                  m%elk(idx_dof1,i,idx_dof2,j) = m%elk(idx_dof1,i,idx_dof2,j) + m%qp%Oe(  idx_dof1,idx_dof2,idx_qp,nelem)*p%QPtw_Shp_ShpDer(idx_qp,j,i)
-               END DO
-               DO idx_qp = 1,p%nqp ! dot_product( m%qp%Stif(idx_dof1,idx_dof2,:,nelem), p%QPtw_ShpDer_ShpDer_Jac(:,i,j,nelem))
-                  m%elk(idx_dof1,i,idx_dof2,j) = m%elk(idx_dof1,i,idx_dof2,j) + m%qp%Stif(idx_dof1,idx_dof2,idx_qp,nelem)*p%QPtw_ShpDer_ShpDer_Jac(idx_qp,i,j,nelem)
-               END DO
-            ENDDO
-         ENDDO
-      ENDDO
-   ENDDO
+       DO jdof=1,p%dof_node
+           idx_jdof = (j-1)*p%dof_node + jdof
+
+           DO i=1,p%nodes_per_elem
+               idof_start = (i-1)*p%dof_node + 1
+               idof_end   = i*p%dof_node
+
+               m%elk(idof_start:idof_end,idx_jdof) = 0.0_BDKi
+               DO idx_qp = 1,p%nqp
+                   m%elk(idof_start:idof_end,idx_jdof) = m%elk(idof_start:idof_end,idx_jdof) &
+                                                       + m%qp%Qe(  :,jdof,idx_qp,nelem) *p%QPtw_Shp_Shp_Jac(idx_qp,i,j,nelem) &
+                                                       + m%qp%Pe(  :,jdof,idx_qp,nelem) *p%QPtw_Shp_ShpDer(idx_qp,i,j) &
+                                                       + m%qp%Oe(  :,jdof,idx_qp,nelem) *p%QPtw_Shp_ShpDer(idx_qp,j,i) &
+                                                       + m%qp%Stif(:,jdof,idx_qp,nelem) *p%QPtw_ShpDer_ShpDer_Jac(idx_qp,i,j,nelem)
+
+               END DO ! idx_qp = 1,p%nqp
+
+           ENDDO ! DO i=1,p%nodes_per_elem
+
+       ENDDO ! DO idx_dof=1,p%dof_node
+   END DO ! DO j=1,p%nodes_per_elem
 
    m%qp%Ftemp(:,:,nelem) = m%qp%Fd(:,:,nelem) - m%qp%Fg(:,:,nelem) - m%DistrLoad_QP(:,:,nelem)
    call Integrate_ElementForce(nelem, p, m) ! use m%qp%Fc and m%qp%Ftemp to compute m%elf
@@ -3747,6 +3742,7 @@ SUBROUTINE BD_StaticElementMatrix(  nelem, gravity, p, m )
 END SUBROUTINE BD_StaticElementMatrix
 
 
+!-----------------------------------------------------------------------------------------------------------------------------------
 !> This routine computes m%elf from the parameters (shape functions, derivatives) as well as m%qp%Fc and m%qp%Ftemp
 SUBROUTINE Integrate_ElementForce(nelem, p, m)
 
@@ -3756,26 +3752,20 @@ SUBROUTINE Integrate_ElementForce(nelem, p, m)
 
    INTEGER(IntKi)              :: idx_qp
    INTEGER(IntKi)              :: i
-   INTEGER(IntKi)              :: idx_dof1
    CHARACTER(*), PARAMETER     :: RoutineName = 'Integrate_ElementForce'
 
+   m%elf = 0.0_BDKi
+
    DO i=1,p%nodes_per_elem
-      DO idx_dof1=1,p%dof_node
-      
-         m%elf(idx_dof1,i) = 0.0_BDKi
-         
-         DO idx_qp = 1,p%nqp ! dot_product( m%qp%Fc  (idx_dof1,:,nelem), p%QPtw_ShpDer( :,i))
-            m%elf(idx_dof1,i) = m%elf(idx_dof1,i) - m%qp%Fc  (idx_dof1,idx_qp,nelem)*p%QPtw_ShpDer(idx_qp,i)
+         DO idx_qp = 1,p%nqp
+            m%elf(:,i) = m%elf(:,i) - m%qp%Fc(:,idx_qp,nelem)*p%QPtw_ShpDer(idx_qp,i) &
+                                    - m%qp%Ftemp(:,idx_qp,nelem)*p%QPtw_Shp_Jac(idx_qp,i,nelem)
          END DO
-         
-         DO idx_qp = 1,p%nqp ! dot_product(m%qp%Ftemp(idx_dof1,:,nelem), p%QPtw_Shp_Jac(:,i,nelem) )
-            m%elf(idx_dof1,i) = m%elf(idx_dof1,i) - m%qp%Ftemp(idx_dof1,idx_qp,nelem)*p%QPtw_Shp_Jac(idx_qp,i,nelem)
-         END DO
-         
-      ENDDO
    ENDDO
    
 END SUBROUTINE Integrate_ElementForce
+
+
 !-----------------------------------------------------------------------------------------------------------------------------------
 !> This routine computes m%elm from the parameters (shape functions, derivatives) as well as m%qp%Mi
 SUBROUTINE Integrate_ElementMass(nelem, p, m)
@@ -3785,30 +3775,30 @@ SUBROUTINE Integrate_ElementMass(nelem, p, m)
    TYPE(BD_MiscVarType),         INTENT(INOUT)  :: m           !< Misc/optimization variables
 
    INTEGER(IntKi)              :: idx_qp
-   INTEGER(IntKi)              :: i
-   INTEGER(IntKi)              :: j
-   INTEGER(IntKi)              :: idx_dof1, idx_dof2
+   INTEGER(IntKi)              :: i, idof_start, idof_end
+   INTEGER(IntKi)              :: j, idx_jdof, jdof
    CHARACTER(*), PARAMETER     :: RoutineName = 'Integrate_ElementMass'
 
+   m%elm = 0.0_BDKi
+
    DO j=1,p%nodes_per_elem
-      DO idx_dof2=1,p%dof_node
-      
-         DO i=1,p%nodes_per_elem
-            DO idx_dof1=1,p%dof_node
-            
-               m%elm(idx_dof1,i,idx_dof2,j) = 0.0_BDKi
-               
+       DO jdof=1,p%dof_node
+           idx_jdof = (j-1)*p%dof_node + jdof
+
+           DO i=1,p%nodes_per_elem
+               idof_start = (i-1)*p%dof_node + 1
+               idof_end   = i*p%dof_node
+
                DO idx_qp = 1,p%nqp
-                  m%elm(idx_dof1,i,idx_dof2,j) = m%elm(idx_dof1,i,idx_dof2,j) + m%qp%Mi(idx_dof1,idx_dof2,idx_qp,nelem)*p%QPtw_Shp_Shp_Jac(idx_qp,i,j,nelem)
+                  m%elm(idof_start:idof_end,idx_jdof) = m%elm(idof_start:idof_end,idx_jdof) &
+                                                      + m%qp%Mi(:,jdof,idx_qp,nelem)*p%QPtw_Shp_Shp_Jac(idx_qp,i,j,nelem)
                END DO
-               
-            END DO
-         END DO
-         
-      END DO
+
+           END DO
+
+       END DO
    END DO
-   
-   
+
 END SUBROUTINE Integrate_ElementMass
 
 
@@ -4132,7 +4122,7 @@ SUBROUTINE BD_QuasiStaticElementMatrix(  nelem, p, m )
 
    INTEGER(IntKi)              :: i
    INTEGER(IntKi)              :: j
-   INTEGER(IntKi)              :: idx_dof1, idx_dof2
+   INTEGER(IntKi)              :: idx_dof, dof_start, dof_end
    INTEGER(IntKi)              :: idx_qp
    CHARACTER(*), PARAMETER     :: RoutineName = 'BD_QuasiStaticElementMatrix'
 
@@ -4143,30 +4133,28 @@ SUBROUTINE BD_QuasiStaticElementMatrix(  nelem, p, m )
       ! NOTE: we only use Ki (not Gi or Mi as we are not calculating \delta{a} or \delta{v})
    CALL BD_InertialForce( nelem,p,m,.true. )    ! Calculate Fi      [and Mi, Gi, Ki]
 
+   m%elk = 0.0_BDKi
+
    DO j=1,p%nodes_per_elem
-      DO idx_dof2=1,p%dof_node
-         DO i=1,p%nodes_per_elem
-            DO idx_dof1=1,p%dof_node
-               m%elk(idx_dof1,i,idx_dof2,j) = 0.0_BDKi
-               DO idx_qp = 1,p%nqp ! dot_product( m%qp%Qe(  idx_dof1,idx_dof2,:,nelem), p%QPtw_Shp_Shp_Jac(      :,i,j,nelem)) 
-                  m%elk(idx_dof1,i,idx_dof2,j) = m%elk(idx_dof1,i,idx_dof2,j) + (m%qp%Qe(  idx_dof1,idx_dof2,idx_qp,nelem) +  m%qp%Ki(idx_dof1,idx_dof2,idx_qp,nelem))*p%QPtw_Shp_Shp_Jac(idx_qp,i,j,nelem)
-               END DO
-                  
-               DO idx_qp = 1,p%nqp ! dot_product( m%qp%Pe(  idx_dof1,idx_dof2,:,nelem), p%QPtw_Shp_ShpDer(       :,i,j)      ) 
-                  m%elk(idx_dof1,i,idx_dof2,j) = m%elk(idx_dof1,i,idx_dof2,j) + m%qp%Pe(  idx_dof1,idx_dof2,idx_qp,nelem)*p%QPtw_Shp_ShpDer(idx_qp,i,j)
-               END DO
-               DO idx_qp = 1,p%nqp ! dot_product( m%qp%Oe(  idx_dof1,idx_dof2,:,nelem), p%QPtw_Shp_ShpDer(       :,j,i)      ) 
-                  m%elk(idx_dof1,i,idx_dof2,j) = m%elk(idx_dof1,i,idx_dof2,j) + m%qp%Oe(  idx_dof1,idx_dof2,idx_qp,nelem)*p%QPtw_Shp_ShpDer(idx_qp,j,i)
-               END DO
-               DO idx_qp = 1,p%nqp ! dot_product( m%qp%Stif(idx_dof1,idx_dof2,:,nelem), p%QPtw_ShpDer_ShpDer_Jac(:,i,j,nelem))
-                  m%elk(idx_dof1,i,idx_dof2,j) = m%elk(idx_dof1,i,idx_dof2,j) + m%qp%Stif(idx_dof1,idx_dof2,idx_qp,nelem)*p%QPtw_ShpDer_ShpDer_Jac(idx_qp,i,j,nelem)
-               END DO
-            ENDDO
-         ENDDO
-      ENDDO
-   ENDDO
-  
-      ! NOTE: m%DistrLoad_QP is ramped in the QuasiStatic call.
+       DO idx_dof=1,p%dof_node
+           DO i=1,p%nodes_per_elem
+
+               dof_start = i*p%dof_node
+               dof_end   = dof_start + p%dof_node
+
+               DO idx_qp = 1,p%nqp
+                   m%elk(dof_start:dof_end,j) = m%elk(dof_start:dof_end,j) &
+                                              + (m%qp%Qe(  :,idx_dof,idx_qp,nelem) +  m%qp%Ki(:,idx_dof,idx_qp,nelem))*p%QPtw_Shp_Shp_Jac(idx_qp,i,j,nelem) &
+                                              +  m%qp%Pe(  :,idx_dof,idx_qp,nelem)                                    *p%QPtw_Shp_ShpDer(idx_qp,i,j) &
+                                              +  m%qp%Oe(  :,idx_dof,idx_qp,nelem)                                    *p%QPtw_Shp_ShpDer(idx_qp,j,i) &
+                                              +  m%qp%Stif(:,idx_dof,idx_qp,nelem)                                    *p%QPtw_ShpDer_ShpDer_Jac(idx_qp,i,j,nelem)
+
+               END DO ! DO i=1,p%nodes_per_elem
+           ENDDO ! DO idx_dof=1,p%dof_node
+       ENDDO ! DO j=1,p%nodes_per_elem
+   END DO
+
+   ! NOTE: m%DistrLoad_QP is ramped in the QuasiStatic call.
    m%qp%Ftemp(:,:,nelem) = m%qp%Fd(:,:,nelem) + m%qp%Fi(:,:,nelem) - m%qp%Fg(:,:,nelem) - m%DistrLoad_QP(:,:,nelem)
    call Integrate_ElementForce(nelem, p, m) ! use m%qp%Fc and m%qp%Ftemp to compute m%elf
 
@@ -4675,16 +4663,16 @@ SUBROUTINE BD_DynamicSolutionGA2( x, OtherState, p, m, ErrStat, ErrMsg)
          IF ( p%tngt_stf_fd .OR. p%tngt_stf_comp ) m%StifK_fd = m%MassM_fd + p%coef(7) * m%DampG_fd + p%coef(8) * m%StifK_fd
 
          ! compare the finite differenced stiffness matrix against the analytical tangent stiffness matrix is flag is set
-         IF ( p%tngt_stf_comp ) CALL BD_CompTngtStiff( RESHAPE(m%StifK   ,(/p%dof_total,p%dof_total/)), &
+         IF ( p%tngt_stf_comp ) CALL BD_CompTngtStiff( m%StifK, &
                                                        RESHAPE(m%StifK_fd,(/p%dof_total,p%dof_total/)), p%tngt_stf_difftol, &
                                                        ErrStat, ErrMsg )
          IF (ErrStat >= AbortErrLev) return
 
          ! Reshape 4d array into 2d for the use with the LAPACK solver
          IF ( p%tngt_stf_fd ) THEN
-             m%LP_StifK = RESHAPE(m%StifK_fd, (/p%dof_total,p%dof_total/));
+             m%LP_StifK = RESHAPE(m%StifK_fd, (/p%dof_total,p%dof_total/))
          ELSE
-             m%LP_StifK = RESHAPE(   m%StifK, (/p%dof_total,p%dof_total/));
+             m%LP_StifK = m%StifK
          ENDIF
          ! extract the unconstrained stifness matrix
          m%LP_StifK_LU  =  m%LP_StifK(7:p%dof_total,7:p%dof_total)
@@ -4958,15 +4946,13 @@ SUBROUTINE BD_ElementMatrixGA2(  fact, nelem, p, m )
    INTEGER(IntKi),               INTENT(IN   )  :: nelem             !< Number of current element
 
    INTEGER(IntKi)               :: idx_qp
-   INTEGER(IntKi)               :: i
-   INTEGER(IntKi)               :: j
-   INTEGER(IntKi)               :: idx_dof1
-   INTEGER(IntKi)               :: idx_dof2
+   INTEGER(IntKi)               :: i, idof_start, idof_end
+   INTEGER(IntKi)               :: j, idx_jdof, jdof
    CHARACTER(*), PARAMETER      :: RoutineName = 'BD_ElementMatrixGA2'
    
 
 !FIXME: adp: I don't see the gyroscopic term in here.  That is stored in m%qp%Fb
-!VA: The gyroscopic term is included in the m%qp%Gi. I think the m%qp%Fb term is used to calculate the accelerations       
+!VA: The gyroscopic term is included in the m%qp%Gi. I think the m%qp%Fb term is used to calculate the accelerations
       
    
    CALL BD_ElasticForce(  nelem,p,m,fact )                    ! Calculate Fc, Fd  [and if(fact): Oe, Pe, and Qe for N-R algorithm] using m%qp%E1, m%qp%RR0, m%qp%kappa, m%qp%Stif   
@@ -4977,106 +4963,57 @@ SUBROUTINE BD_ElementMatrixGA2(  fact, nelem, p, m )
    ENDIF
    
    CALL BD_GravityForce( nelem, p, m, p%gravity )
-   
-   
 
-      ! Equations 10, 11, 12 in Wang_2014
+   ! Equations 10, 11, 12 in Wang_2014
+   IF (fact) THEN
 
-   IF (fact) THEN  
-      DO j=1,p%nodes_per_elem
-         DO idx_dof2=1,p%dof_node
-            DO i=1,p%nodes_per_elem
-               DO idx_dof1=1,p%dof_node
-                  
-                  m%elk(idx_dof1,i,idx_dof2,j) = 0.0_BDKi
-                  DO idx_qp = 1,p%nqp ! dot_product(m%qp%Qe(  idx_dof1,idx_dof2,:,nelem) +  m%qp%Ki(idx_dof1,idx_dof2,:,nelem), p%QPtw_Shp_Shp_Jac(      :,i,j,nelem) )
-                     m%elk(idx_dof1,i,idx_dof2,j) =  m%elk(idx_dof1,i,idx_dof2,j) + (m%qp%Qe(idx_dof1,idx_dof2,idx_qp,nelem) +  m%qp%Ki(idx_dof1,idx_dof2,idx_qp,nelem))*p%QPtw_Shp_Shp_Jac(idx_qp,i,j,nelem)
-                  END DO
-                  DO idx_qp = 1,p%nqp ! dot_product(m%qp%Pe(  idx_dof1,idx_dof2,:,nelem)                                      , p%QPtw_Shp_ShpDer(       :,i,j) )
-                     m%elk(idx_dof1,i,idx_dof2,j) = m%elk(idx_dof1,i,idx_dof2,j) +  m%qp%Pe(  idx_dof1,idx_dof2,idx_qp,nelem)*p%QPtw_Shp_ShpDer(idx_qp,i,j)
-                  END DO
-                  DO idx_qp = 1,p%nqp ! dot_product(m%qp%Oe(  idx_dof1,idx_dof2,:,nelem)                                      , p%QPtw_Shp_ShpDer(       :,j,i) )
-                     m%elk(idx_dof1,i,idx_dof2,j) = m%elk(idx_dof1,i,idx_dof2,j) +  m%qp%Oe(  idx_dof1,idx_dof2,idx_qp,nelem)*p%QPtw_Shp_ShpDer(idx_qp,j,i)
-                  END DO
-                  DO idx_qp = 1,p%nqp ! dot_product(m%qp%Stif(idx_dof1,idx_dof2,:,nelem)                                      , p%QPtw_ShpDer_ShpDer_Jac(:,i,j,nelem) )
-                     m%elk(idx_dof1,i,idx_dof2,j) = m%elk(idx_dof1,i,idx_dof2,j) +  m%qp%Stif(idx_dof1,idx_dof2,idx_qp,nelem)*p%QPtw_ShpDer_ShpDer_Jac(idx_qp,i,j,nelem)
-                  END DO
-                  
-               ENDDO
-            ENDDO
-         ENDDO
-      END DO
+       m%elk = 0.0_BDKi
+       m%elm = 0.0_BDKi
+       m%elg = 0.0_BDKi
 
-      CALL Integrate_ElementMass(nelem, p, m) ! use m%qp%Mi to compute m%elm
-                  
+       DO j=1,p%nodes_per_elem
+           DO jdof=1,p%dof_node
+               idx_jdof = (j-1)*p%dof_node + jdof
 
-      DO j=1,p%nodes_per_elem
-         DO idx_dof2=1,p%dof_node
-            DO i=1,p%nodes_per_elem
-               DO idx_dof1=1,p%dof_node
-                  
-                  m%elg(idx_dof1,i,idx_dof2,j) = 0.0_BDKi
-                  DO idx_qp = 1,p%nqp ! dot_product( m%qp%Gi(idx_dof1,idx_dof2,:,nelem), p%QPtw_Shp_Shp_Jac(:,i,j,nelem))
-                     m%elg(idx_dof1,i,idx_dof2,j) = m%elg(idx_dof1,i,idx_dof2,j) + m%qp%Gi(idx_dof1,idx_dof2,idx_qp,nelem)*p%QPtw_Shp_Shp_Jac(idx_qp,i,j,nelem)
-                  END DO
-                  
-               ENDDO
-            ENDDO
-         ENDDO
-      END DO
-   
-         ! Dissipative terms
-      IF (p%damp_flag .NE. 0) THEN
-         DO j=1,p%nodes_per_elem
-            DO idx_dof2=1,p%dof_node
                DO i=1,p%nodes_per_elem
-                  DO idx_dof1=1,p%dof_node
-                     
-                     DO idx_qp = 1,p%nqp ! dot_product(m%qp%Qd(idx_dof1,idx_dof2,:,nelem), p%QPtw_Shp_Shp_Jac(      :,i,j,nelem))
-                        m%elk(idx_dof1,i,idx_dof2,j) = m%elk(idx_dof1,i,idx_dof2,j) + m%qp%Qd(idx_dof1,idx_dof2,idx_qp,nelem)*p%QPtw_Shp_Shp_Jac(idx_qp,i,j,nelem)
-                     END DO
-                     DO idx_qp = 1,p%nqp ! dot_product(m%qp%Pd(idx_dof1,idx_dof2,:,nelem), p%QPtw_Shp_ShpDer(       :,i,j)      )
-                        m%elk(idx_dof1,i,idx_dof2,j) = m%elk(idx_dof1,i,idx_dof2,j) + m%qp%Pd(idx_dof1,idx_dof2,idx_qp,nelem)*p%QPtw_Shp_ShpDer(idx_qp,i,j)
-                     END DO 
-                     DO idx_qp = 1,p%nqp ! dot_product(m%qp%Od(idx_dof1,idx_dof2,:,nelem), p%QPtw_Shp_ShpDer(       :,j,i)      )
-                        m%elk(idx_dof1,i,idx_dof2,j) = m%elk(idx_dof1,i,idx_dof2,j) + m%qp%Od(idx_dof1,idx_dof2,idx_qp,nelem)*p%QPtw_Shp_ShpDer(idx_qp,j,i)
-                     END DO
-                     DO idx_qp = 1,p%nqp ! dot_product(m%qp%Sd(idx_dof1,idx_dof2,:,nelem), p%QPtw_ShpDer_ShpDer_Jac(:,i,j,nelem))
-                        m%elk(idx_dof1,i,idx_dof2,j) = m%elk(idx_dof1,i,idx_dof2,j) + m%qp%Sd(idx_dof1,idx_dof2,idx_qp,nelem)*p%QPtw_ShpDer_ShpDer_Jac(idx_qp,i,j,nelem)
-                     END DO
-                     
-                  ENDDO
-               ENDDO
-            ENDDO
-         END DO
+                   idof_start = (i-1)*p%dof_node + 1
+                   idof_end   = i*p%dof_node
 
-         DO j=1,p%nodes_per_elem
-            DO idx_dof2=1,p%dof_node
-               DO i=1,p%nodes_per_elem
-                  DO idx_dof1=1,p%dof_node
-                     
-                     DO idx_qp = 1,p%nqp ! dot_product(m%qp%Xd(   idx_dof1,idx_dof2,:,nelem), p%QPtw_Shp_Shp_Jac(      :,i,j,nelem))
-                        m%elg(idx_dof1,i,idx_dof2,j) = m%elg(idx_dof1,i,idx_dof2,j) + m%qp%Xd(   idx_dof1,idx_dof2,idx_qp,nelem)*p%QPtw_Shp_Shp_Jac(idx_qp,i,j,nelem)
-                     END DO
-                     DO idx_qp = 1,p%nqp ! dot_product(m%qp%Yd(   idx_dof1,idx_dof2,:,nelem), p%QPtw_Shp_ShpDer(       :,i,j)      )
-                        m%elg(idx_dof1,i,idx_dof2,j) = m%elg(idx_dof1,i,idx_dof2,j) + m%qp%Yd(   idx_dof1,idx_dof2,idx_qp,nelem)*p%QPtw_Shp_ShpDer(idx_qp,i,j)
-                     END DO
-                     DO idx_qp = 1,p%nqp ! dot_product(m%qp%Gd(   idx_dof1,idx_dof2,:,nelem), p%QPtw_Shp_ShpDer(       :,j,i)      )
-                        m%elg(idx_dof1,i,idx_dof2,j) = m%elg(idx_dof1,i,idx_dof2,j) + m%qp%Gd(   idx_dof1,idx_dof2,idx_qp,nelem)*p%QPtw_Shp_ShpDer(idx_qp,j,i)
-                     END DO
-                     DO idx_qp = 1,p%nqp ! dot_product(m%qp%betaC(idx_dof1,idx_dof2,:,nelem), p%QPtw_ShpDer_ShpDer_Jac(:,i,j,nelem))
-                        m%elg(idx_dof1,i,idx_dof2,j) = m%elg(idx_dof1,i,idx_dof2,j) + m%qp%betaC(idx_dof1,idx_dof2,idx_qp,nelem)*p%QPtw_ShpDer_ShpDer_Jac(idx_qp,i,j,nelem)
-                     END DO
-                     
-                  ENDDO
-               ENDDO
-            ENDDO
-         END DO         
-      ENDIF ! add the dissipative terms
+                   DO idx_qp = 1,p%nqp
+                       m%elk(idof_start:idof_end,idx_jdof) = m%elk(idof_start:idof_end,idx_jdof) &
+                                                           + (m%qp%Qe(  :,jdof,idx_qp,nelem) +  m%qp%Ki(:,jdof,idx_qp,nelem))*p%QPtw_Shp_Shp_Jac(idx_qp,i,j,nelem) &
+                                                           +  m%qp%Pe(  :,jdof,idx_qp,nelem)                                 *p%QPtw_Shp_ShpDer(idx_qp,i,j) &
+                                                           +  m%qp%Oe(  :,jdof,idx_qp,nelem)                                 *p%QPtw_Shp_ShpDer(idx_qp,j,i) &
+                                                           +  m%qp%Stif(:,jdof,idx_qp,nelem)                                 *p%QPtw_ShpDer_ShpDer_Jac(idx_qp,i,j,nelem)
 
-   ENDIF
-   
-      ! Equations 13 and 14 in Wang_2014. F^ext is combined with F^D (F^D = F^D-F^ext)
+                       m%elm(idof_start:idof_end,idx_jdof) = m%elm(idof_start:idof_end,idx_jdof) &
+                                                           + m%qp%Mi(:,jdof,idx_qp,nelem)*p%QPtw_Shp_Shp_Jac(idx_qp,i,j,nelem)
+
+                       m%elg(idof_start:idof_end,idx_jdof) = m%elg(idof_start:idof_end,idx_jdof) &
+                                                           + m%qp%Gi(:,jdof,idx_qp,nelem)*p%QPtw_Shp_Shp_Jac(idx_qp,i,j,nelem)
+
+                       IF (p%damp_flag .NE. 0) THEN
+                           m%elk(idof_start:idof_end,idx_jdof) = m%elk(idof_start:idof_end,idx_jdof) &
+                                                               + (m%qp%Qd(:,jdof,idx_qp,nelem) +  m%qp%Ki(:,jdof,idx_qp,nelem))*p%QPtw_Shp_Shp_Jac(idx_qp,i,j,nelem) &
+                                                               +  m%qp%Pd(:,jdof,idx_qp,nelem)                                 *p%QPtw_Shp_ShpDer(idx_qp,i,j) &
+                                                               +  m%qp%Od(:,jdof,idx_qp,nelem)                                 *p%QPtw_Shp_ShpDer(idx_qp,j,i) &
+                                                               +  m%qp%Sd(:,jdof,idx_qp,nelem)                                 *p%QPtw_ShpDer_ShpDer_Jac(idx_qp,i,j,nelem)
+
+                           m%elg(idof_start:idof_end,idx_jdof) = m%elg(idof_start:idof_end,idx_jdof) &
+                                                               + m%qp%Xd(   :,jdof,idx_qp,nelem)*p%QPtw_Shp_Shp_Jac(idx_qp,i,j,nelem) &
+                                                               + m%qp%Yd(   :,jdof,idx_qp,nelem)*p%QPtw_Shp_ShpDer(idx_qp,i,j) &
+                                                               + m%qp%Gd(   :,jdof,idx_qp,nelem)*p%QPtw_Shp_ShpDer(idx_qp,j,i) &
+                                                               + m%qp%betaC(:,jdof,idx_qp,nelem)*p%QPtw_ShpDer_ShpDer_Jac(idx_qp,i,j,nelem)
+                       END IF ! IF (p%damp_flag .NE. 0)
+
+                   END DO ! DO i=1,p%nodes_per_elem
+               ENDDO ! DO idx_dof=1,p%dof_node
+           ENDDO ! DO j=1,p%nodes_per_elem
+       END DO
+
+   ENDIF ! IF (fact)
+
+   ! Equations 13 and 14 in Wang_2014. F^ext is combined with F^D (F^D = F^D-F^ext)
    ! F^ext is combined with F^D (F^D = F^D-F^ext), i.e. RHS of Equation 9 in Wang_2014
    m%qp%Ftemp(:,:,nelem) = m%qp%Fd(:,:,nelem) + m%qp%Fi(:,:,nelem) - m%qp%Fg(:,:,nelem) - m%DistrLoad_QP(:,:,nelem)
    call Integrate_ElementForce(nelem, p, m) ! use m%qp%Fc and m%qp%Ftemp to compute m%elf
@@ -5570,14 +5507,14 @@ SUBROUTINE BD_CalcForceAcc( u, p, m, ErrStat, ErrMsg )
 
       ! Setup the RHS of the m*a=F equation. Skip the first node as that is handled separately.
    DO j=2,p%node_total
-      m%RHS(:,j)  =  m%RHS(:,j)  -  MATMUL( RESHAPE(m%MassM(:,j,:,1),(/6,6/)), RootAcc)
+      m%RHS(:,j)  =  m%RHS(:,j)  -  MATMUL( m%MassM( (j-1)*p%dof_node+1:j*p%dof_node, 1:p%dof_node ), RootAcc)
    ENDDO
 
 
       ! Solve for the accelerations!
       !  Reshape for the use with the LAPACK solver.  Only solving for nodes 2:p%node_total (node 1 accelerations are known)
    m%LP_RHS_LU =  RESHAPE(m%RHS(:,2:p%node_total),    (/p%dof_total-6/))
-   m%LP_MassM  =  RESHAPE(m%MassM,  (/p%dof_total,p%dof_total/))     ! Flatten out the dof dimensions of the matrix.
+   m%LP_MassM  =  m%MassM ! Flatten out the dof dimensions of the matrix.
    m%LP_MassM_LU  = m%LP_MassM(7:p%dof_total,7:p%dof_total)
 
       ! Solve linear equations A * X = B for acceleration (F=ma) for nodes 2:p%node_total
@@ -5596,12 +5533,12 @@ SUBROUTINE BD_CalcForceAcc( u, p, m, ErrStat, ErrMsg )
 
       !> Now that we have all the accelerations, complete the summation \f$ \sum_{i} m_{1,i} a_{i} \f$
       ! First node:
-   NodeMassAcc = MATMUL( RESHAPE(m%MassM(:,1,:,1),(/6,6/)),m%RHS(:,1) )
+   NodeMassAcc = MATMUL( m%MassM( 1:p%dof_node, 1:p%dof_node ),m%RHS(:,1) )
    m%FirstNodeReactionLclForceMoment(1:6)   =  m%FirstNodeReactionLclForceMoment(1:6)   - NodeMassAcc(1:6)
 
       ! remaining nodes
    DO j=2,p%Node_total
-      NodeMassAcc = MATMUL( RESHAPE(m%MassM(:,j,:,1),(/6,6/)),m%RHS(:,j) )
+      NodeMassAcc = MATMUL( m%MassM( (j-1)*p%dof_node+1:j*p%dof_node, 1:p%dof_node ),m%RHS(:,j) )
       m%FirstNodeReactionLclForceMoment(1:6)   =  m%FirstNodeReactionLclForceMoment(1:6)   - NodeMassAcc(1:6)
    ENDDO
 
@@ -6725,9 +6662,9 @@ SUBROUTINE BD_WriteMassStiff( p, m, ErrStat, ErrMsg )
 
       ! Write out the mass and stiffness in the calculation frame
    WRITE(m%Un_Sum,'()')
-   CALL WrMatrix(RESHAPE(m%StifK, (/p%dof_total, p%dof_total/)), m%Un_Sum, p%OutFmt, 'Full stiffness matrix (BD calculation coordinate frame)')
+   CALL WrMatrix(m%StifK, m%Un_Sum, p%OutFmt, 'Full stiffness matrix (BD calculation coordinate frame)')
    WRITE(m%Un_Sum,'()')
-   CALL WrMatrix(RESHAPE(m%MassM, (/p%dof_total, p%dof_total/)), m%Un_Sum, p%OutFmt, 'Full mass matrix (BD calculation coordinate frame)')
+   CALL WrMatrix(m%MassM, m%Un_Sum, p%OutFmt, 'Full mass matrix (BD calculation coordinate frame)')
 
    RETURN
 
@@ -6746,8 +6683,8 @@ SUBROUTINE BD_WriteMassStiffInFirstNodeFrame( p, x, m, ErrStat, ErrMsg )
    REAL(BDKi), ALLOCATABLE                            :: TmpMassM(:,:)  ! temporary array for holding the Mass matrix for coordinate transform before writing to file
    REAL(BDKi)                                         :: TmpRR0Local(3,3)
    REAL(BDKi)                                         :: tempR6(6,6)
-   INTEGER                                            :: i
-   INTEGER                                            :: j
+   INTEGER                                            :: i, i_start, i_end
+   INTEGER                                            :: j, j_start, j_end
    INTEGER(IntKi)                                     :: ErrStat2   ! Temporary Error status
    CHARACTER(ErrMsgLen)                               :: ErrMsg2    ! Temporary Error message
    CHARACTER(*), PARAMETER                            :: RoutineName = 'BD_WriteMassStiffInFirstNodeFrame'
@@ -6776,17 +6713,21 @@ SUBROUTINE BD_WriteMassStiffInFirstNodeFrame( p, x, m, ErrStat, ErrMsg )
    tempR6(4:6,4:6) = TmpRR0Local
 
    do i=1,p%Node_Total
+      i_start = (i-1)*p%dof_node+1
+      i_end   = i*p%dof_node
       do j=1,p%Node_Total
-         TmpStifK( (j-1)*p%dof_node+1:j*p%dof_node, (i-1)*p%dof_node+1:i*p%dof_node ) = MATMUL( transpose(tempR6), MATMUL( m%StifK(:,j,:,i), tempR6 ))
-         TmpMassM( (j-1)*p%dof_node+1:j*p%dof_node, (i-1)*p%dof_node+1:i*p%dof_node ) = MATMUL( transpose(tempR6), MATMUL( m%MassM(:,j,:,i), tempR6 ))
+         j_start = (j-1)*p%dof_node+1
+         j_end   = j*p%dof_node
+         TmpStifK( j_start:j_end, i_start:i_end ) = MATMUL( transpose(tempR6), MATMUL( m%StifK( j_start:j_end, i_start:i_end ), tempR6 ))
+         TmpMassM( j_start:j_end, i_start:i_end ) = MATMUL( transpose(tempR6), MATMUL( m%MassM( j_start:j_end, i_start:i_end ), tempR6 ))
       enddo
    enddo
 
       ! Write out the mass and stiffness in the first node frame
    WRITE(m%Un_Sum,'()')
-   CALL WrMatrix(RESHAPE(TmpStifK, (/p%dof_total, p%dof_total/)), m%Un_Sum, p%OutFmt, 'Full stiffness matrix (IEC blade first node coordinate frame)')
+   CALL WrMatrix(TmpStifK, m%Un_Sum, p%OutFmt, 'Full stiffness matrix (IEC blade first node coordinate frame)')
    WRITE(m%Un_Sum,'()')
-   CALL WrMatrix(RESHAPE(TmpMassM, (/p%dof_total, p%dof_total/)), m%Un_Sum, p%OutFmt, 'Full mass matrix (IEC blade first node coordinate frame)')
+   CALL WrMatrix(TmpMassM, m%Un_Sum, p%OutFmt, 'Full mass matrix (IEC blade first node coordinate frame)')
 
 
 

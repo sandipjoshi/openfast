@@ -343,14 +343,14 @@ typedef   ^        MiscVarType    R8Ki        lin_C            {:}{:}  - - "C (d
 typedef   ^        MiscVarType    R8Ki         Nrrr         :::           - - "Rotation parameters relative to root node, from Nuuu (at GLL points)" -
 typedef   ^        MiscVarType    ^            elf          {:}{:}        - - "" -
 typedef   ^        MiscVarType    ^            EFint        {:}{:}{:}     - - "Elastic forces internal to blade.  For output calculations only." -
-typedef   ^        MiscVarType    ^            elk          {:}{:}{:}{:}  - - "" -
-typedef   ^        MiscVarType    ^            elg          {:}{:}{:}{:}  - - "" -
-typedef   ^        MiscVarType    ^            elm          {:}{:}{:}{:}  - - "" -
+typedef   ^        MiscVarType    ^            elk          {:}{:}        - - "" -
+typedef   ^        MiscVarType    ^            elg          {:}{:}        - - "" -
+typedef   ^        MiscVarType    ^            elm          {:}{:}        - - "" -
 typedef   ^        MiscVarType    ^            DistrLoad_QP {:}{:}{:}     - - "Copy of the distributed load, in the BD reference frame" -
 typedef   ^        MiscVarType    ^            PointLoadLcl {:}{:}        - - "Copy of the point loads, in the BD reference frame" -
-typedef   ^        MiscVarType    ^            StifK        {:}{:}{:}{:}  - - "Stiffness Matrix" -
-typedef   ^        MiscVarType    ^            MassM        {:}{:}{:}{:}  - - "Mass Matrix" -
-typedef   ^        MiscVarType    ^            DampG        {:}{:}{:}{:}  - - "Damping Matrix" -
+typedef   ^        MiscVarType    ^            StifK        {:}{:}        - - "Stiffness Matrix" -
+typedef   ^        MiscVarType    ^            MassM        {:}{:}        - - "Mass Matrix" -
+typedef   ^        MiscVarType    ^            DampG        {:}{:}        - - "Damping Matrix" -
 typedef   ^        MiscVarType    ^            StifK_fd     {:}{:}{:}{:}  - - "Finite differenced Stiffness Matrix" -
 typedef   ^        MiscVarType    ^            MassM_fd     {:}{:}{:}{:}  - - "Finite differenced Mass Matrix" -
 typedef   ^        MiscVarType    ^            DampG_fd     {:}{:}{:}{:}  - - "Finite differenced Damping Matrix" -
