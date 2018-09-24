@@ -3764,6 +3764,7 @@ SUBROUTINE Integrate_ElementForce(nelem, p, m)
 
    m%elf = 0.0_BDKi
 
+  !$OMP PARALLEL DO collapse(2)
    DO i=1,p%nodes_per_elem
        DO idof=1,p%dof_node
            DO idx_qp = 1,p%nqp
@@ -3772,6 +3773,7 @@ SUBROUTINE Integrate_ElementForce(nelem, p, m)
            END DO
        END DO
    ENDDO
+  !$OMP END PARALLEL DO
    
 END SUBROUTINE Integrate_ElementForce
 
@@ -4984,12 +4986,12 @@ SUBROUTINE BD_ElementMatrixGA2(  fact, nelem, p, m )
        m%elm = 0.0_BDKi
        m%elg = 0.0_BDKi
 
+      !$OMP PARALLEL DO collapse(4)
        DO j=1,p%nodes_per_elem
            DO jdof=1,p%dof_node
-               idx_jdof = (j-1)*p%dof_node + jdof
-
                DO i=1,p%nodes_per_elem
                    DO idof=1,p%dof_node
+                       idx_jdof = (j-1)*p%dof_node + jdof
                        idx_idof = (i-1)*p%dof_node + idof
 
                        DO idx_qp = 1,p%nqp
@@ -5018,9 +5020,9 @@ SUBROUTINE BD_ElementMatrixGA2(  fact, nelem, p, m )
 
                    END DO ! idof=1,p%dof_nod
                ENDDO ! DO i=1,p%nodes_per_elem
-
            ENDDO ! DO jdof=1,p%dof_node
        END DO ! DO j=1,p%nodes_per_elem
+       !$OMP END PARALLEL DO
 
    ENDIF ! IF (fact)
 
