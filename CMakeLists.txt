@@ -46,6 +46,7 @@ endif()
 option(BUILD_OPENFAST_SIMULINK_API "Enable building OpenFAST for use with Simulink" off)
 if(BUILD_OPENFAST_SIMULINK_API)
   set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -DCOMPILE_SIMULINK")
+  set(BUILD_SHARED_LIBS on)
 endif()
 
 # Setup Fortran Compiler options based on architecture/compiler
