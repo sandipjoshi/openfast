@@ -3527,9 +3527,7 @@ SUBROUTINE BD_StaticSolution( x, gravity, p, m, piter, ErrStat, ErrMsg )
 
 
          !  Point loads are on the GLL points.
-      DO j=1,p%node_total
-         m%RHS(1:6,j) = m%RHS(1:6,j) + m%PointLoadLcl(1:6,j)
-      ENDDO
+      m%RHS = m%RHS + m%PointLoadLcl
 
           ! Reshape for the use with the LAPACK solver
        m%LP_RHS      = RESHAPE(m%RHS, (/p%dof_total/))
@@ -3561,7 +3559,7 @@ SUBROUTINE BD_StaticSolution( x, gravity, p, m, piter, ErrStat, ErrMsg )
       CALL BD_StaticUpdateConfiguration(p,m,x)
       
          ! Set the first node reaction force / moment
-      m%FirstNodeReactionLclForceMoment(1:6) =  m%RHS(1:6,1)
+      m%FirstNodeReactionLclForceMoment = m%RHS(:,1)
 
       Enorm = abs(DOT_PRODUCT(m%LP_RHS_LU, m%LP_RHS(7:p%dof_total))) ! compute the energy of the current system (note - not a norm!)
 
@@ -3644,25 +3642,29 @@ SUBROUTINE BD_StaticUpdateConfiguration(p,m,x)
 
    REAL(BDKi)                             :: rotf_temp(3)
    REAL(BDKi)                             :: roti_temp(3)
-   REAL(BDKi)                             :: rot_temp(3)
+   REAL(BDKi), allocatable                :: rot_temp(:,:)
    INTEGER(IntKi)                         :: i
+   integer :: myid, nthreads
    CHARACTER(*), PARAMETER                :: RoutineName = 'BD_StaticUpdateConfiguration'
 
+   allocate(rot_temp(3,p%node_total))
+
+   ! Calculate new position
+   x%q(1:3,2:p%node_total) = x%q(1:3,2:p%node_total) + m%Solution(1:3,2:p%node_total)
+
       ! Root node is known, so do not calculate it.
+   !$OMP PARALLEL DO
    DO i=2, p%node_total
-
-         ! Calculate new position
-       x%q(1:3,i)    =  x%q(1:3,i) + m%Solution(1:3,i)
-
          ! Calculate the new rotation.  Combine the original rotation parameters, x%q(4:6,:),
          ! with the rotation displacement parameters, m%Solution(4:6,i).  Note that the result must
          ! be composed from the two sets of rotation parameters
-       rotf_temp(:)  =  x%q(4:6,i)
-       roti_temp(:)  =  m%Solution(4:6,i)
-       CALL BD_CrvCompose(rot_temp,roti_temp,rotf_temp,FLAG_R1R2) ! R(rot_temp) = R(roti_temp) R(rotf_temp)
-       x%q(4:6,i) = rot_temp(:)
-
+       rotf_temp = x%q(4:6,i)
+       roti_temp = m%Solution(4:6,i)
+       CALL BD_CrvCompose(rot_temp(:,i),roti_temp,rotf_temp,FLAG_R1R2) ! R(rot_temp) = R(roti_temp) R(rotf_temp)
    ENDDO
+   !$OMP END PARALLEL DO
+
+   x%q(4:6,2:p%node_total) = rot_temp(:,2:p%node_total)
 
 END SUBROUTINE BD_StaticUpdateConfiguration
 
