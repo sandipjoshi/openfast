@@ -24,7 +24,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 # CMake Configuration variables
 if (NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE "Release" CACHE STRING
+  set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING
     "Choose the build type: Debug Release" FORCE)
 endif (NOT CMAKE_BUILD_TYPE)
 
@@ -61,13 +61,21 @@ endif (FPE_TRAP_ENABLED)
 
 # Setup dependencies
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
+  set(MKL_USE_STATIC_LIBS ON)
+  # set(MKL_FIND_DEBUG ON)
   find_package(MKL)
 endif()
 if (MKL_FOUND)
-  include_directories(${MKL_INCLUDE_DIRS})
   set(BLAS_LIBRARIES ${MKL_LIBRARIES})
   set(LAPACK_LIBRARIES ${MKL_LIBRARIES})
-  set(CMAKE_Fortran_IMPLICIT_LINK_LIBRARIES "ifport;ifcore;imf;svml;m;ipgo;intlc;c;irc_s;dl;c")
+  set(CMAKE_BUILD_RPATH ${MKL_LIBRARY_DIRS})
+  if (INTEL_PERFORMANCE)
+    find_package(OpenMP)
+    if(OpenMP_Fortran_FOUND)
+      message("OpenMP_Fortran_FLAGS ${OpenMP_Fortran_FLAGS}")
+      set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${OpenMP_Fortran_FLAGS} -DOPENMP")
+    endif()
+  endif()
 else()
   find_package(BLAS REQUIRED)
   find_package(LAPACK REQUIRED)
