@@ -317,8 +317,150 @@ SUBROUTINE HydroDyn_Init( InitInp, u, p, x, xd, z, OtherState, y, m, Interval, I
       CHARACTER(ErrMsgLen)                   :: ErrMsg2                             ! local error message
       CHARACTER(*), PARAMETER                :: RoutineName = 'HydroDyn_Init'
    
+! print *, "HydroDyn_InputType"
+! print *, "Morison", sizeof(u%Morison)
+! print *, "Mesh", sizeof(u%Mesh)
 
-      
+! print "HydroDyn_InitInputType"
+! print *, "Waves", sizeof(InitInp%Waves)
+! print *, "Waves2", sizeof(InitInp%Waves2)
+! print *, "Current", sizeof(InitInp%Current)
+! print *, "WAMIT", sizeof(InitInp%WAMIT)
+! print *, "WAMIT2", sizeof(InitInp%WAMIT2)
+! print *, "Morison", sizeof(InitInp%Morison)
+
+! why dont the sum of these equal sizeof(Waves)?
+! print *, "InputFile", sizeof(InitInp%Waves%InputFile)
+! print *, "DirRoot", sizeof(InitInp%Waves%DirRoot)
+! print *, "WvKinFile", sizeof(InitInp%Waves%WvKinFile)
+! print *, "WaveModChr", sizeof(InitInp%Waves%WaveModChr)
+! print *, "WavePkShpChr", sizeof(InitInp%Waves%WavePkShpChr)
+! print *, "WaveDT", sizeof(InitInp%Waves%WaveDT)
+! print *, "WaveTMax", sizeof(InitInp%Waves%WaveTMax)
+! print *, "WaveSeed", sizeof(InitInp%Waves%WaveSeed)
+! print *, "Gravity", sizeof(InitInp%Waves%Gravity)
+! print *, "MSL2SWL", sizeof(InitInp%Waves%MSL2SWL)
+! print *, "WvLowCOff", sizeof(InitInp%Waves%WvLowCOff)
+! print *, "WvHiCOff", sizeof(InitInp%Waves%WvHiCOff)
+! print *, "WaveDir", sizeof(InitInp%Waves%WaveDir)
+! print *, "WaveDirSpread", sizeof(InitInp%Waves%WaveDirSpread)
+! print *, "WaveDirRange", sizeof(InitInp%Waves%WaveDirRange)
+! print *, "WaveHs", sizeof(InitInp%Waves%WaveHs)
+! print *, "WavePhase", sizeof(InitInp%Waves%WavePhase)
+! print *, "WavePkShp", sizeof(InitInp%Waves%WavePkShp)
+! print *, "WaveTp", sizeof(InitInp%Waves%WaveTp)
+! print *, "WtrDens", sizeof(InitInp%Waves%WtrDens)
+! print *, "WtrDpth", sizeof(InitInp%Waves%WtrDpth)
+! print *, "PCurrVxiPz0", sizeof(InitInp%Waves%PCurrVxiPz0)
+! print *, "PCurrVyiPz0", sizeof(InitInp%Waves%PCurrVyiPz0)
+! print *, "UnSum", sizeof(InitInp%Waves%UnSum)
+! print *, "WaveNDir", sizeof(InitInp%Waves%WaveNDir)
+! print *, "WaveDirMod", sizeof(InitInp%Waves%WaveDirMod)
+! print *, "WaveMod", sizeof(InitInp%Waves%WaveMod)
+! print *, "WaveStMod", sizeof(InitInp%Waves%WaveStMod)
+! print *, "NWaveElev", sizeof(InitInp%Waves%NWaveElev)
+! print *, "NWaveKin", sizeof(InitInp%Waves%NWaveKin)
+! print *, "WriteWvKin", sizeof(InitInp%Waves%WriteWvKin)
+! print *, "WaveMultiDir", sizeof(InitInp%Waves%WaveMultiDir)
+! print *, "WaveNDAmp", sizeof(InitInp%Waves%WaveNDAmp)
+! print *, "WaveElevxi", sizeof(InitInp%Waves%WaveElevxi)
+! print *, "WaveElevyi", sizeof(InitInp%Waves%WaveElevyi)
+! print *, "WaveElevXY", sizeof(InitInp%Waves%WaveElevXY)
+! print *, "WaveKinxi", sizeof(InitInp%Waves%WaveKinxi)
+! print *, "WaveKinyi", sizeof(InitInp%Waves%WaveKinyi)
+! print *, "WaveKinzi", sizeof(InitInp%Waves%WaveKinzi)
+! print *, "CurrVxi", sizeof(InitInp%Waves%CurrVxi)
+! print *, "CurrVyi", sizeof(InitInp%Waves%CurrVyi)
+! print *, "total", sizeof(InitInp%Waves%InputFile) + sizeof(InitInp%Waves%DirRoot) + sizeof(InitInp%Waves%WvKinFile) + sizeof(InitInp%Waves%WaveModChr) + sizeof(InitInp%Waves%WavePkShpChr) + sizeof(InitInp%Waves%WaveDT) + sizeof(InitInp%Waves%WaveTMax) + sizeof(InitInp%Waves%WaveSeed) + sizeof(InitInp%Waves%Gravity) + sizeof(InitInp%Waves%MSL2SWL) + sizeof(InitInp%Waves%WvLowCOff) + sizeof(InitInp%Waves%WvHiCOff) + sizeof(InitInp%Waves%WaveDir) + sizeof(InitInp%Waves%WaveDirSpread) + sizeof(InitInp%Waves%WaveDirRange) + sizeof(InitInp%Waves%WaveHs) + sizeof(InitInp%Waves%WavePhase) + sizeof(InitInp%Waves%WavePkShp) + sizeof(InitInp%Waves%WaveTp) + sizeof(InitInp%Waves%WtrDens) + sizeof(InitInp%Waves%WtrDpth) + sizeof(InitInp%Waves%PCurrVxiPz0) + sizeof(InitInp%Waves%PCurrVyiPz0) + sizeof(InitInp%Waves%UnSum) + sizeof(InitInp%Waves%WaveNDir) + sizeof(InitInp%Waves%WaveDirMod) + sizeof(InitInp%Waves%WaveMod) + sizeof(InitInp%Waves%WaveStMod) + sizeof(InitInp%Waves%NWaveElev) + sizeof(InitInp%Waves%NWaveKin) + sizeof(InitInp%Waves%WriteWvKin) + sizeof(InitInp%Waves%WaveMultiDir) + sizeof(InitInp%Waves%WaveNDAmp)
+
+! print *, "HydroDyn_InitOutputType"
+! print *, "WtrDens", sizeof(InitOut%WtrDens)
+! print *, "WtrDpth", sizeof(InitOut%WtrDpth)
+! print *, "MSL2SWL", sizeof(InitOut%MSL2SWL)
+! print *, "WAMIT", sizeof(InitOut%WAMIT)
+! print *, "WAMIT2", sizeof(InitOut%WAMIT2)
+! print *, "Waves2", sizeof(InitOut%Waves2)
+! print *, "Morison", sizeof(InitOut%Morison)
+! print *, "Ver", sizeof(InitOut%Ver)
+! print *, "WaveElevSeries", sizeof(InitOut%WaveElevSeries)
+! print *, "WriteOutputHdr", sizeof(InitOut%WriteOutputHdr)
+! print *, "WriteOutputUnt", sizeof(InitOut%WriteOutputUnt)
+! print *, "HydroDyn_ContinuousStateType"
+! print *, "WAMIT", sizeof(x%WAMIT)
+! print *, "WAMIT2", sizeof(x%WAMIT2)
+! print *, "Waves2", sizeof(x%Waves2)
+! print *, "Morison", sizeof(x%Morison)
+! print *, "HydroDyn_DiscreteStateType"
+! print *, "WAMIT", sizeof(xd%WAMIT)
+! print *, "WAMIT2", sizeof(xd%WAMIT2)
+! print *, "Waves2", sizeof(xd%Waves2)
+! print *, "Morison", sizeof(xd%Morison)
+! print *, "HydroDyn_ConstraintStateType"
+! print *, "WAMIT", sizeof(z%WAMIT)
+! print *, "WAMIT2", sizeof(z%WAMIT2)
+! print *, "Waves2", sizeof(z%Waves2)
+! print *, "Morison", sizeof(z%Morison)
+! print *, "HydroDyn_OtherStateType"
+! print *, "WAMIT", sizeof(OtherState%WAMIT)
+! print *, "WAMIT2", sizeof(OtherState%WAMIT2)
+! print *, "Waves2", sizeof(OtherState%Waves2)
+! print *, "Morison", sizeof(OtherState%Morison)
+
+! print *, "HydroDyn_MiscVarType"
+! print *, "F_PtfmAdd", sizeof(m%F_PtfmAdd)
+! print *, "F_Hydro", sizeof(m%F_Hydro)
+! print *, "F_Waves", sizeof(m%F_Waves)
+! print *, "LastOutTime", sizeof(m%LastOutTime)
+! print *, "Decimate", sizeof(m%Decimate)
+! print *, "LastIndWave", sizeof(m%LastIndWave)
+! print *, "y_mapped", sizeof(m%y_mapped)
+! print *, "AllHdroOrigin_position", sizeof(m%AllHdroOrigin_position)
+! print *, "MrsnLumpedMesh_position", sizeof(m%MrsnLumpedMesh_position)
+! print *, "MrsnDistribMesh_position", sizeof(m%MrsnDistribMesh_position)
+! print *, "HD_MeshMap", sizeof(m%HD_MeshMap)
+! print *, "WAMIT", sizeof(m%WAMIT)
+! print *, "WAMIT2", sizeof(m%WAMIT2)
+! print *, "Waves2", sizeof(m%Waves2)
+! print *, "Morison", sizeof(m%Morison)
+! print *, "u_WAMIT", sizeof(m%u_WAMIT)
+! print *, "u_WAMIT2", sizeof(m%u_WAMIT2)
+! print *, "u_Waves2", sizeof(m%u_Waves2)
+
+! print *, "HydroDyn_ParameterType"
+! print *, "AddCLin", sizeof(p%AddCLin)
+! print *, "AddBLin", sizeof(p%AddBLin)
+! print *, "AddBQuad", sizeof(p%AddBQuad)
+! print *, "AddF0", sizeof(p%AddF0)
+! print *, "OutFmt", sizeof(p%OutFmt)
+! print *, "OutSFmt", sizeof(p%OutSFmt)
+! print *, "DT", sizeof(p%DT)
+! print *, "Delim", sizeof(p%Delim)
+! print *, "NStepWave", sizeof(p%NStepWave)
+! print *, "NWaveElev", sizeof(p%NWaveElev)
+! print *, "PotMod", sizeof(p%PotMod)
+! print *, "NumOuts", sizeof(p%NumOuts)
+! print *, "NumTotalOuts", sizeof(p%NumTotalOuts)
+! print *, "OutSwtch", sizeof(p%OutSwtch)
+! print *, "UnOutFile", sizeof(p%UnOutFile)
+! print *, "OutDec", sizeof(p%OutDec)
+! print *, "WAMIT", sizeof(p%WAMIT)
+! print *, "WAMIT2", sizeof(p%WAMIT2)
+! print *, "Waves2", sizeof(p%Waves2)
+! print *, "Morison", sizeof(p%Morison)
+! print *, "OutParam", sizeof(p%OutParam)
+! print *, "WaveTime", sizeof(p%WaveTime)
+! print *, "WaveElev", sizeof(p%WaveElev)
+! print *, "WaveElev1", sizeof(p%WaveElev1)
+
+! print *, "HydroDyn_OutputType"
+! print *, "WAMIT", sizeof(y%WAMIT)
+! print *, "WAMIT2", sizeof(y%WAMIT2)
+! print *, "Waves2", sizeof(y%Waves2)
+! print *, "Morison", sizeof(y%Morison)
+! print *, "Mesh", sizeof(y%Mesh)
+! print *, "AllHdroOrigin", sizeof(y%AllHdroOrigin)
+! print *, "WriteOutput", sizeof(y%WriteOutput)
+
          ! Initialize ErrStat
          
       ErrStat = ErrID_None         
@@ -2108,6 +2250,11 @@ FUNCTION CalcLoadsAtWRP( y, u, y_mapped, AllHdroOrigin_position, MrsnLumpedMesh_
    INTEGER(IntKi)                                 :: ErrStat2                  ! temporary Error status of the operation
    CHARACTER(ErrMsgLen)                           :: ErrMsg2                   ! temporary Error message if ErrStat /= ErrID_None
    
+! print *, "HD_ModuleMapType"
+! print *, "HD_P_2_WRP_P", sizeof(MeshMapData%HD_P_2_WRP_P) 
+! print *, "M_P_2_WRP_P", sizeof(MeshMapData%M_P_2_WRP_P) 
+! print *, "M_L_2_WRP_P", sizeof(MeshMapData%M_L_2_WRP_P) 
+
    y%AllHdroOrigin%Force = 0.0
    y%AllHdroOrigin%Moment= 0.0
    

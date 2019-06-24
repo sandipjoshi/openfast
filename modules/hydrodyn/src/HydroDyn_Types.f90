@@ -45,182 +45,303 @@ IMPLICIT NONE
     INTEGER(IntKi), PUBLIC, PARAMETER  :: MaxHDOutputs = 54      ! The maximum number of output channels supported by this module [-]
 ! =========  HydroDyn_InitInputType  =======
   TYPE, PUBLIC :: HydroDyn_InitInputType
+    ! 43032 bytes
+    TYPE(Morison_InitInputType)  :: Morison      !< Initialization data for Morison module [-]
+    
+    ! 4080 bytes
+    TYPE(WAMIT_InitInputType)  :: WAMIT      !< Initialization data for WAMIT module [-]
+
+    ! 3984 bytes
+    TYPE(Waves_InitInputType)  :: Waves      !< Initialization data for Waves module [-]
+    
+    ! 1720 bytes
+    TYPE(WAMIT2_InitInputType)  :: WAMIT2      !< Initialization data for WAMIT2 module [-]
+    
+    ! 1224 bytes
+    TYPE(Current_InitInputType)  :: Current      !< Initialization data for Current module [-]
+
+    ! ChanLen = 20; 54 * 20 = 1080 byte
+    CHARACTER(ChanLen) , DIMENSION(1:54)  :: OutList      !< The user-requested output channel labels for this modules. This should really be dimensioned with MaxOutPts [-]
+
+    ! 1024 byte
     CHARACTER(1024)  :: InputFile      !< Supplied by Driver:  full path and filename for the HydroDyn module [-]
-    LOGICAL  :: UseInputFile      !< Supplied by Driver:  .TRUE. if using a input file, .FALSE. if all inputs are being passed in by the caller [-]
     CHARACTER(1024)  :: OutRootName      !< Supplied by Driver:  The name of the root file (without extension) including the full path [-]
-    LOGICAL  :: Linearize = .FALSE.      !< Flag that tells this module if the glue code wants to linearize. [-]
-    REAL(DbKi)  :: DT      !< Supplied by Driver:  Simulation time step [(sec)]
-    REAL(ReKi)  :: Gravity      !< Supplied by Driver:  Gravitational acceleration [(m/s^2)]
-    REAL(DbKi)  :: TMax      !< Supplied by Driver:  The total simulation time [(sec)]
-    LOGICAL  :: HasIce      !< Supplied by Driver:  Whether this simulation has ice loading (flag) [-]
-    REAL(SiKi) , DIMENSION(:,:), ALLOCATABLE  :: WaveElevXY      !< Supplied by Driver:  X-Y locations for WaveElevation output (for visualization).  First dimension is the X (1) and Y (2) coordinate.  Second dimension is the point number. [m,-]
-    REAL(ReKi)  :: PtfmLocationX      !< Supplied by Driver:  X coordinate of platform location in the wave field [m]
-    REAL(ReKi)  :: PtfmLocationY      !< Supplied by Driver:  Y coordinate of platform location in the wave field [m]
-    CHARACTER(80)  :: PtfmSgFChr      !< Platform horizontal surge translation force (flag) or DEFAULT [-]
-    LOGICAL  :: PtfmSgF      !< Optionally Supplied by Driver:  Platform horizontal surge translation force (flag) [-]
-    CHARACTER(80)  :: PtfmSwFChr      !< Platform horizontal sway translation force (flag) or DEFAULT [-]
-    LOGICAL  :: PtfmSwF      !< Optionally Supplied by Driver:  Platform horizontal sway translation force (flag) [-]
-    CHARACTER(80)  :: PtfmHvFChr      !< Platform vertical heave translation force (flag) or DEFAULT [-]
-    LOGICAL  :: PtfmHvF      !< Optionally Supplied by Driver:  Platform vertical heave translation force (flag) [-]
-    CHARACTER(80)  :: PtfmRFChr      !< Platform roll tilt rotation force (flag) or DEFAULT [-]
-    LOGICAL  :: PtfmRF      !< Optionally Supplied by Driver:  Platform roll tilt rotation force (flag) [-]
-    CHARACTER(80)  :: PtfmPFChr      !< Platform pitch tilt rotation force (flag) or DEFAULT [-]
-    LOGICAL  :: PtfmPF      !< Optionally Supplied by Driver:  Platform pitch tilt rotation force (flag) [-]
-    CHARACTER(80)  :: PtfmYFChr      !< Platform yaw rotation force (flag) or DEFAULT [-]
-    LOGICAL  :: PtfmYF      !< Optionally Supplied by Driver:  Platform yaw rotation force (flag) [-]
-    REAL(ReKi) , DIMENSION(1:6)  :: AddF0      !< Additional pre-load forces and moments (N,N,N,N-m,N-m,N-m) [-]
+    CHARACTER(1024)  :: PotFile      !< The name of the root potential flow file (without extension for WAMIT, complete name for FIT) [-]
+
+    ! 976 bytes
+    TYPE(Waves2_InitInputType)  :: Waves2      !< Initialization data for Waves module [-]
+
+    ! double precision: 36 * 8 = 288 byte
+    ! single precision: 36 * 4 = 144 byte
     REAL(ReKi) , DIMENSION(1:6,1:6)  :: AddCLin      !< Additional stiffness matrix [-]
     REAL(ReKi) , DIMENSION(1:6,1:6)  :: AddBLin      !< Additional linear damping matrix [-]
     REAL(ReKi) , DIMENSION(1:6,1:6)  :: AddBQuad      !< Additional quadratic damping (drag) matrix [-]
-    TYPE(Waves_InitInputType)  :: Waves      !< Initialization data for Waves module [-]
-    TYPE(Waves2_InitInputType)  :: Waves2      !< Initialization data for Waves module [-]
-    TYPE(Current_InitInputType)  :: Current      !< Initialization data for Current module [-]
-    CHARACTER(1024)  :: PotFile      !< The name of the root potential flow file (without extension for WAMIT, complete name for FIT) [-]
-    TYPE(WAMIT_InitInputType)  :: WAMIT      !< Initialization data for WAMIT module [-]
-    TYPE(WAMIT2_InitInputType)  :: WAMIT2      !< Initialization data for WAMIT2 module [-]
-    TYPE(Morison_InitInputType)  :: Morison      !< Initialization data for Morison module [-]
-    LOGICAL  :: Echo      !< Echo the input files to a file with the same name as the input but with a .echo extension [T/F] [-]
-    INTEGER(IntKi)  :: PotMod      !< 1 if using WAMIT model, 0 if no potential flow model, or 2 if FIT model [-]
-    INTEGER(IntKi)  :: NUserOutputs      !< Number of Hydrodyn-level requested output channels [-]
-    CHARACTER(ChanLen) , DIMENSION(:), ALLOCATABLE  :: UserOutputs      !< This should really be dimensioned with MaxOutPts [-]
-    INTEGER(IntKi)  :: OutSwtch      !< Output requested channels to: [1=Hydrodyn.out 2=GlueCode.out  3=both files] [-]
-    LOGICAL  :: OutAll      !< Output all user-specified member and joint loads (only at each member end, not interior locations) [T/F] [-]
-    INTEGER(IntKi)  :: NumOuts      !< The number of outputs for this module as requested in the input file [-]
-    CHARACTER(ChanLen) , DIMENSION(1:54)  :: OutList      !< The user-requested output channel labels for this modules. This should really be dimensioned with MaxOutPts [-]
-    LOGICAL  :: HDSum      !< Generate a HydroDyn summary file [T/F] [-]
-    INTEGER(IntKi)  :: UnSum      !< File unit for the HydroDyn summary file [-1 = no summary file] [-]
+
+    ! 80 byte
+    CHARACTER(80)  :: PtfmSgFChr      !< Platform horizontal surge translation force (flag) or DEFAULT [-]
+    CHARACTER(80)  :: PtfmSwFChr      !< Platform horizontal sway translation force (flag) or DEFAULT [-]
+    CHARACTER(80)  :: PtfmHvFChr      !< Platform vertical heave translation force (flag) or DEFAULT [-]
+    CHARACTER(80)  :: PtfmRFChr      !< Platform roll tilt rotation force (flag) or DEFAULT [-]
+    CHARACTER(80)  :: PtfmPFChr      !< Platform pitch tilt rotation force (flag) or DEFAULT [-]
+    CHARACTER(80)  :: PtfmYFChr      !< Platform yaw rotation force (flag) or DEFAULT [-]
+
+    ! double precision: 6 * 8 = 48 byte
+    ! single precision: 6 * 4 = 24 byte
+    REAL(ReKi) , DIMENSION(1:6)  :: AddF0      !< Additional pre-load forces and moments (N,N,N,N-m,N-m,N-m) [-]
+
+    ! 20 byte
     CHARACTER(20)  :: OutFmt      !< Output format for numerical results [-]
     CHARACTER(20)  :: OutSFmt      !< Output format for header strings [-]
+
+    ! double precision: 16 byte
+    ! single precision: 8 byte
+    REAL(DbKi)  :: DT      !< Supplied by Driver:  Simulation time step [(sec)]
+    REAL(DbKi)  :: TMax      !< Supplied by Driver:  The total simulation time [(sec)]
+
+    ! double precision: 8 byte
+    ! single precision: 4 byte
+    REAL(ReKi)  :: Gravity      !< Supplied by Driver:  Gravitational acceleration [(m/s^2)]
+    REAL(ReKi)  :: PtfmLocationX      !< Supplied by Driver:  X coordinate of platform location in the wave field [m]
+    REAL(ReKi)  :: PtfmLocationY      !< Supplied by Driver:  Y coordinate of platform location in the wave field [m]
+
+    ! 4 byte
+    INTEGER(IntKi)  :: PotMod      !< 1 if using WAMIT model, 0 if no potential flow model, or 2 if FIT model [-]
+    INTEGER(IntKi)  :: NUserOutputs      !< Number of Hydrodyn-level requested output channels [-]
+    INTEGER(IntKi)  :: OutSwtch      !< Output requested channels to: [1=Hydrodyn.out 2=GlueCode.out  3=both files] [-]
+    INTEGER(IntKi)  :: UnSum      !< File unit for the HydroDyn summary file [-1 = no summary file] [-]
+    INTEGER(IntKi)  :: NumOuts      !< The number of outputs for this module as requested in the input file [-]
+
+    ! 4 byte
+    LOGICAL  :: Linearize = .FALSE.      !< Flag that tells this module if the glue code wants to linearize. [-]
+    LOGICAL  :: UseInputFile      !< Supplied by Driver:  .TRUE. if using a input file, .FALSE. if all inputs are being passed in by the caller [-]
+    LOGICAL  :: HasIce      !< Supplied by Driver:  Whether this simulation has ice loading (flag) [-]
+    LOGICAL  :: PtfmSgF      !< Optionally Supplied by Driver:  Platform horizontal surge translation force (flag) [-]
+    LOGICAL  :: PtfmSwF      !< Optionally Supplied by Driver:  Platform horizontal sway translation force (flag) [-]
+    LOGICAL  :: PtfmHvF      !< Optionally Supplied by Driver:  Platform vertical heave translation force (flag) [-]
+    LOGICAL  :: PtfmRF      !< Optionally Supplied by Driver:  Platform roll tilt rotation force (flag) [-]
+    LOGICAL  :: PtfmPF      !< Optionally Supplied by Driver:  Platform pitch tilt rotation force (flag) [-]
+    LOGICAL  :: PtfmYF      !< Optionally Supplied by Driver:  Platform yaw rotation force (flag) [-]
+    LOGICAL  :: Echo      !< Echo the input files to a file with the same name as the input but with a .echo extension [T/F] [-]
+    LOGICAL  :: OutAll      !< Output all user-specified member and joint loads (only at each member end, not interior locations) [T/F] [-]
+    LOGICAL  :: HDSum      !< Generate a HydroDyn summary file [T/F] [-]
+  
+    ! 0 byte until allocated
+    REAL(SiKi) , DIMENSION(:,:), ALLOCATABLE  :: WaveElevXY      !< Supplied by Driver:  X-Y locations for WaveElevation output (for visualization).  First dimension is the X (1) and Y (2) coordinate.  Second dimension is the point number. [m,-]
+    CHARACTER(ChanLen) , DIMENSION(:), ALLOCATABLE  :: UserOutputs      !< This should really be dimensioned with MaxOutPts [-]
   END TYPE HydroDyn_InitInputType
 ! =======================
 ! =========  HydroDyn_InitOutputType  =======
   TYPE, PUBLIC :: HydroDyn_InitOutputType
-    TYPE(WAMIT_InitOutputType)  :: WAMIT      !< Initialization output from the WAMIT module [-]
-    TYPE(WAMIT2_InitOutputType)  :: WAMIT2      !< Initialization output from the WAMIT2 module [-]
-    TYPE(Waves2_InitOutputType)  :: Waves2      !< Initialization output from the Waves2 module [-]
+    ! 2888 byte
     TYPE(Morison_InitOutputType)  :: Morison      !< Initialization output from the Morison module [-]
-    CHARACTER(ChanLen) , DIMENSION(:), ALLOCATABLE  :: WriteOutputHdr      !< The is the list of all HD-related output channel header strings (includes all sub-module channels) [-]
-    CHARACTER(ChanLen) , DIMENSION(:), ALLOCATABLE  :: WriteOutputUnt      !< The is the list of all HD-related output channel unit strings (includes all sub-module channels) [-]
-    REAL(SiKi) , DIMENSION(:,:), ALLOCATABLE  :: WaveElevSeries      !< Wave elevation time-series at each of the points given by WaveElevXY.  First dimension is the timestep. Second dimension is XY point number corresponding to second dimension of WaveElevXY. [(m)]
+
+    ! 1584 byte
+    TYPE(Waves2_InitOutputType)  :: Waves2      !< Initialization output from the Waves2 module [-]
+
+    ! 222 byte
     TYPE(ProgDesc)  :: Ver      !< Version of HydroDyn [-]
+
+    ! 144 byte
+    TYPE(WAMIT_InitOutputType)  :: WAMIT      !< Initialization output from the WAMIT module [-]
+
+    ! 144 byte
+    TYPE(WAMIT2_InitOutputType)  :: WAMIT2      !< Initialization output from the WAMIT2 module [-]
+
+    ! double precision: 8 byte
+    ! single precision: 4 byte
     REAL(ReKi)  :: WtrDens      !< Water density [(kg/m^3)]
     REAL(ReKi)  :: WtrDpth      !< Water depth [(m)]
     REAL(ReKi)  :: MSL2SWL      !< Offset between still-water level and mean sea level [(m)]
+    
+    ! 0 bytes
     CHARACTER(LinChanLen) , DIMENSION(:), ALLOCATABLE  :: LinNames_y      !< Names of the outputs used in linearization [-]
     CHARACTER(LinChanLen) , DIMENSION(:), ALLOCATABLE  :: LinNames_x      !< Names of the continuous states used in linearization [-]
     CHARACTER(LinChanLen) , DIMENSION(:), ALLOCATABLE  :: LinNames_u      !< Names of the inputs used in linearization [-]
     INTEGER(IntKi) , DIMENSION(:), ALLOCATABLE  :: DerivOrder_x      !< Integer that tells FAST/MBC3 the maximum derivative order of continuous states used in linearization [-]
     LOGICAL , DIMENSION(:), ALLOCATABLE  :: IsLoad_u      !< Flag that tells FAST if the inputs used in linearization are loads (for preconditioning matrix) [-]
+    CHARACTER(ChanLen) , DIMENSION(:), ALLOCATABLE  :: WriteOutputHdr      !< The is the list of all HD-related output channel header strings (includes all sub-module channels) [-]
+    CHARACTER(ChanLen) , DIMENSION(:), ALLOCATABLE  :: WriteOutputUnt      !< The is the list of all HD-related output channel unit strings (includes all sub-module channels) [-]
+    REAL(SiKi) , DIMENSION(:,:), ALLOCATABLE  :: WaveElevSeries      !< Wave elevation time-series at each of the points given by WaveElevXY.  First dimension is the timestep. Second dimension is XY point number corresponding to second dimension of WaveElevXY. [(m)]
   END TYPE HydroDyn_InitOutputType
 ! =======================
 ! =========  HD_ModuleMapType  =======
   TYPE, PUBLIC :: HD_ModuleMapType
+    ! 4424
     TYPE(MeshMapType)  :: HD_P_2_WRP_P 
+    ! 4424
     TYPE(MeshMapType)  :: M_P_2_WRP_P 
+    ! 4424
     TYPE(MeshMapType)  :: M_L_2_WRP_P 
   END TYPE HD_ModuleMapType
 ! =======================
 ! =========  HydroDyn_ContinuousStateType  =======
   TYPE, PUBLIC :: HydroDyn_ContinuousStateType
+    ! 80 bytes
     TYPE(WAMIT_ContinuousStateType)  :: WAMIT      !< continuous states from the wamit module [-]
+    ! 4 bytes
     TYPE(WAMIT2_ContinuousStateType)  :: WAMIT2      !< continuous states from the wamit2 module [-]
+    ! 4 bytes
     TYPE(Waves2_ContinuousStateType)  :: Waves2      !< continuous states from the waves2 module [-]
+    ! 4 bytes
     TYPE(Morison_ContinuousStateType)  :: Morison      !< continuous states from the Morison module [-]
   END TYPE HydroDyn_ContinuousStateType
 ! =======================
 ! =========  HydroDyn_DiscreteStateType  =======
   TYPE, PUBLIC :: HydroDyn_DiscreteStateType
+    ! 128 bytes
     TYPE(WAMIT_DiscreteStateType)  :: WAMIT      !< discrete states from the wamit module [-]
+    ! 4 bytes
     TYPE(WAMIT2_DiscreteStateType)  :: WAMIT2      !< discrete states from the wamit2 module [-]
+    ! 4 bytes
     TYPE(Waves2_DiscreteStateType)  :: Waves2      !< discrete states from the waves2 module [-]
+    ! 4 bytes
     TYPE(Morison_DiscreteStateType)  :: Morison      !< discrete states from the Morison module [-]
   END TYPE HydroDyn_DiscreteStateType
 ! =======================
 ! =========  HydroDyn_ConstraintStateType  =======
   TYPE, PUBLIC :: HydroDyn_ConstraintStateType
+    ! 8 bytes
     TYPE(WAMIT_ConstraintStateType)  :: WAMIT      !< constraint states from WAMIT (may be empty) [-]
+    ! 4 bytes
     TYPE(WAMIT2_ConstraintStateType)  :: WAMIT2      !< constraint states from WAMIT2 (may be empty) [-]
+    ! 4 bytes
     TYPE(Waves2_ConstraintStateType)  :: Waves2      !< constraint states from the waves2 module [-]
+    ! 4 bytes
     TYPE(Morison_ConstraintStateType)  :: Morison      !< constraint states from the Morison module [-]
   END TYPE HydroDyn_ConstraintStateType
 ! =======================
 ! =========  HydroDyn_OtherStateType  =======
   TYPE, PUBLIC :: HydroDyn_OtherStateType
+    ! 304 bytes
     TYPE(WAMIT_OtherStateType)  :: WAMIT      !< OtherState information from the WAMIT module [-]
+    ! 4 bytes
     TYPE(WAMIT2_OtherStateType)  :: WAMIT2      !< OtherState information from the WAMIT2 module [-]
+    ! 4 bytes
     TYPE(Waves2_OtherStateType)  :: Waves2      !< OtherState information from the Waves2 module [-]
+    ! 4 bytes
     TYPE(Morison_OtherStateType)  :: Morison      !< OtherState information from the Morison module [-]
   END TYPE HydroDyn_OtherStateType
 ! =======================
 ! =========  HydroDyn_MiscVarType  =======
   TYPE, PUBLIC :: HydroDyn_MiscVarType
+    ! 13272
+    TYPE(HD_ModuleMapType)  :: HD_MeshMap
+
+    ! 1688
+    TYPE(Morison_MiscVarType)  :: Morison      !< misc var information from the Morison module [-]
+
+    ! 1336 byte
     TYPE(MeshType)  :: y_mapped      !< An intermediate mesh used to transfer hydrodynamic loads from the various HD-related meshes to the AllHdroOrigin mesh [-]
     TYPE(MeshType)  :: AllHdroOrigin_position      !< A motions mesh which has all translational displacements set to zero.  Used in the transfer of hydrodynamic loads from the various HD-related meshes to the AllHdroOrigin mesh [-]
     TYPE(MeshType)  :: MrsnLumpedMesh_position      !< A motions mesh which has all translational displacements set to zero.  Used in the transfer of hydrodynamic loads from the various HD-related meshes to the AllHdroOrigin mesh [-]
     TYPE(MeshType)  :: MrsnDistribMesh_position      !< A motions mesh which has all translational displacements set to zero.  Used in the transfer of hydrodynamic loads from the various HD-related meshes to the AllHdroOrigin mesh [-]
-    TYPE(HD_ModuleMapType)  :: HD_MeshMap 
-    INTEGER(IntKi)  :: Decimate      !< The output decimation counter [-]
-    REAL(DbKi)  :: LastOutTime      !< Last time step which was written to the output file (sec) [-]
-    INTEGER(IntKi)  :: LastIndWave      !< The last index used in the wave kinematics arrays, used to optimize interpolation [-]
+    TYPE(WAMIT_InputType)  :: u_WAMIT      !< WAMIT module inputs [-]
+    TYPE(WAMIT2_InputType)  :: u_WAMIT2      !< WAMIT2 module inputs [-]
+
+    ! 512
+    TYPE(WAMIT_MiscVarType)  :: WAMIT      !< misc var information from the WAMIT module [-]
+
+    ! 56
+    TYPE(WAMIT2_MiscVarType)  :: WAMIT2      !< misc var information from the WAMIT2 module [-]
+
+    ! double precision: 6 * 8 = 48 byte
+    ! single precision: 6 * 4 = 24 byte
     REAL(ReKi) , DIMENSION(1:6)  :: F_PtfmAdd      !< The total forces and moments due to additional pre-load, stiffness, and damping [-]
     REAL(ReKi) , DIMENSION(1:6)  :: F_Hydro      !< The total hydrodynamic forces and moments integrated about the WAMIT reference point [-]
     REAL(ReKi) , DIMENSION(1:6)  :: F_Waves      !< The total waves forces on a WAMIT body calculated by first and second order methods (WAMIT and WAMIT2 modules) [-]
-    TYPE(WAMIT_MiscVarType)  :: WAMIT      !< misc var information from the WAMIT module [-]
-    TYPE(WAMIT2_MiscVarType)  :: WAMIT2      !< misc var information from the WAMIT2 module [-]
+
+    ! double precision: 16 byte
+    ! single precision: 8 byte
+    REAL(DbKi)  :: LastOutTime      !< Last time step which was written to the output file (sec) [-]
+    
+    ! 4 byte
     TYPE(Waves2_MiscVarType)  :: Waves2      !< misc var information from the Waves2 module [-]
-    TYPE(Morison_MiscVarType)  :: Morison      !< misc var information from the Morison module [-]
-    TYPE(WAMIT_InputType)  :: u_WAMIT      !< WAMIT module inputs [-]
-    TYPE(WAMIT2_InputType)  :: u_WAMIT2      !< WAMIT2 module inputs [-]
+    INTEGER(IntKi)  :: Decimate      !< The output decimation counter [-]
+    INTEGER(IntKi)  :: LastIndWave      !< The last index used in the wave kinematics arrays, used to optimize interpolation [-]
     TYPE(Waves2_InputType)  :: u_Waves2      !< Waves2 module inputs [-]
   END TYPE HydroDyn_MiscVarType
 ! =======================
 ! =========  HydroDyn_ParameterType  =======
   TYPE, PUBLIC :: HydroDyn_ParameterType
-    TYPE(WAMIT_ParameterType)  :: WAMIT      !< Parameter data for the WAMIT module [-]
-    TYPE(WAMIT2_ParameterType)  :: WAMIT2      !< Parameter data for the WAMIT2 module [-]
-    TYPE(Waves2_ParameterType)  :: Waves2      !< Parameter data for the Waves2 module [-]
+    ! 2832
     TYPE(Morison_ParameterType)  :: Morison      !< Parameter data for the Morison module [-]
-    INTEGER(IntKi)  :: PotMod      !< 1 if using WAMIT model, 0 if no potential flow model, or 2 if FIT model [-]
-    REAL(SiKi) , DIMENSION(:), ALLOCATABLE  :: WaveTime      !< Array of time samples, (sec) [-]
-    INTEGER(IntKi)  :: NStepWave      !< Number of data points in the wave kinematics arrays [-]
-    INTEGER(IntKi)  :: NWaveElev      !< Number of wave elevation outputs [-]
-    REAL(SiKi) , DIMENSION(:,:), ALLOCATABLE  :: WaveElev      !< Total wave elevation [-]
-    REAL(SiKi) , DIMENSION(:,:), ALLOCATABLE  :: WaveElev1      !< First order wave elevation [-]
-    REAL(ReKi)  :: WtrDpth      !< Water depth [(m)]
-    REAL(ReKi) , DIMENSION(1:6)  :: AddF0      !< Additional pre-load forces and moments (N,N,N,N-m,N-m,N-m) [-]
+    
+    ! 1456
+    TYPE(WAMIT_ParameterType)  :: WAMIT      !< Parameter data for the WAMIT module [-]
+
+    ! 448
+    TYPE(WAMIT2_ParameterType)  :: WAMIT2      !< Parameter data for the WAMIT2 module [-]
+
+    ! 352
+    TYPE(Waves2_ParameterType)  :: Waves2      !< Parameter data for the Waves2 module [-]
+    
+    ! double precision: 36 * 8 = 288 byte
+    ! single precision: 36 * 4 = 144 byte
     REAL(ReKi) , DIMENSION(1:6,1:6)  :: AddCLin      !< Additional stiffness matrix [-]
     REAL(ReKi) , DIMENSION(1:6,1:6)  :: AddBLin      !< Additional linear damping matrix [-]
     REAL(ReKi) , DIMENSION(1:6,1:6)  :: AddBQuad      !< Additional quadratic damping (drag) matrix [-]
-    REAL(DbKi)  :: DT      !< Time step in seconds for integration of continuous states (if a fixed-step integrator is used) and update of discrete states [-]
-    TYPE(OutParmType) , DIMENSION(:), ALLOCATABLE  :: OutParam      !<  [-]
-    INTEGER(IntKi)  :: NumOuts      !< Number of HydroDyn module-level outputs (not the total number including sub-modules [-]
-    INTEGER(IntKi)  :: NumTotalOuts      !< Number of all requested outputs including sub-modules [-]
-    INTEGER(IntKi)  :: OutSwtch      !< Output requested channels to: [1=Hydrodyn.out 2=GlueCode.out  3=both files] [-]
+    
+    ! double precision: 6 * 8 = 48 byte
+    ! single precision: 6 * 4 = 24 byte
+    REAL(ReKi) , DIMENSION(1:6)  :: AddF0      !< Additional pre-load forces and moments (N,N,N,N-m,N-m,N-m) [-]
+
+    ! 20 byte
     CHARACTER(20)  :: OutFmt      !< Output format for numerical results [-]
     CHARACTER(20)  :: OutSFmt      !< Output format for header strings [-]
     CHARACTER(ChanLen)  :: Delim      !< Delimiter string for outputs, defaults to tab-delimiters [-]
+
+    ! double precision: 16 byte
+    ! single precision: 8 byte
+    REAL(DbKi)  :: DT      !< Time step in seconds for integration of continuous states (if a fixed-step integrator is used) and update of discrete states [-]
+
+    ! double precision: 8 byte
+    ! single precision: 4 byte
+    REAL(ReKi)  :: WtrDpth      !< Water depth [(m)]
+
+    ! 4 byte
+    INTEGER(IntKi)  :: NStepWave      !< Number of data points in the wave kinematics arrays [-]
+    INTEGER(IntKi)  :: NWaveElev      !< Number of wave elevation outputs [-]
+    INTEGER(IntKi)  :: PotMod      !< 1 if using WAMIT model, 0 if no potential flow model, or 2 if FIT model [-]
+    INTEGER(IntKi)  :: NumOuts      !< Number of HydroDyn module-level outputs (not the total number including sub-modules [-]
+    INTEGER(IntKi)  :: NumTotalOuts      !< Number of all requested outputs including sub-modules [-]
+    INTEGER(IntKi)  :: OutSwtch      !< Output requested channels to: [1=Hydrodyn.out 2=GlueCode.out  3=both files] [-]
     INTEGER(IntKi)  :: UnOutFile      !< File unit for the HydroDyn outputs [-]
-    INTEGER(IntKi)  :: OutDec      !< Write every OutDec time steps [-]
+    INTEGER(IntKi)  :: OutDec      !< Write every OutDec time steps [-]    
+    INTEGER(IntKi)  :: Jac_ny      !< number of outputs in jacobian matrix [-]
+    
+    ! 0 byte
     INTEGER(IntKi) , DIMENSION(:,:), ALLOCATABLE  :: Jac_u_indx      !< matrix to help fill/pack the u vector in computing the jacobian [-]
+    TYPE(OutParmType) , DIMENSION(:), ALLOCATABLE  :: OutParam      !<  [-]
     REAL(R8Ki) , DIMENSION(:), ALLOCATABLE  :: du      !< vector that determines size of perturbation for u (inputs) [-]
     REAL(R8Ki) , DIMENSION(:), ALLOCATABLE  :: dx      !< vector that determines size of perturbation for x (continuous states) [-]
-    INTEGER(IntKi)  :: Jac_ny      !< number of outputs in jacobian matrix [-]
+    REAL(SiKi) , DIMENSION(:), ALLOCATABLE  :: WaveTime      !< Array of time samples, (sec) [-]
+    REAL(SiKi) , DIMENSION(:,:), ALLOCATABLE  :: WaveElev      !< Total wave elevation [-]
+    REAL(SiKi) , DIMENSION(:,:), ALLOCATABLE  :: WaveElev1      !< First order wave elevation [-]
   END TYPE HydroDyn_ParameterType
 ! =======================
 ! =========  HydroDyn_InputType  =======
   TYPE, PUBLIC :: HydroDyn_InputType
+    ! 2672 bytes
     TYPE(Morison_InputType)  :: Morison      !< Morison module inputs [-]
+    ! 1336 bytes
     TYPE(MeshType)  :: Mesh      !< Displacements at the WAMIT reference point in the inertial frame [-]
   END TYPE HydroDyn_InputType
 ! =======================
 ! =========  HydroDyn_OutputType  =======
   TYPE, PUBLIC :: HydroDyn_OutputType
-    TYPE(WAMIT_OutputType)  :: WAMIT      !< WAMIT module outputs [-]
-    TYPE(WAMIT2_OutputType)  :: WAMIT2      !< WAMIT2 module outputs [-]
-    TYPE(Waves2_OutputType)  :: Waves2      !< Waves2 module outputs [-]
+    ! 2744
     TYPE(Morison_OutputType)  :: Morison      !< Morison module outputs [-]
+    ! 1408
+    TYPE(WAMIT_OutputType)  :: WAMIT      !< WAMIT module outputs [-]
+    ! 1408
+    TYPE(WAMIT2_OutputType)  :: WAMIT2      !< WAMIT2 module outputs [-]
+    ! 1336
     TYPE(MeshType)  :: Mesh      !< Point Loads at the WAMIT reference point in the inertial frame [-]
+    ! 1336
     TYPE(MeshType)  :: AllHdroOrigin      !< All HD-related loads integrated to the origin, (0,0,0) in the inertial frame [-]
+    ! 72
+    TYPE(Waves2_OutputType)  :: Waves2      !< Waves2 module outputs [-]
+    ! 0
     REAL(ReKi) , DIMENSION(:), ALLOCATABLE  :: WriteOutput      !<  [-]
   END TYPE HydroDyn_OutputType
 ! =======================
