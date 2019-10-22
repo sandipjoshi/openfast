@@ -1,5 +1,5 @@
 %% INSTRUCTIONS
-% Before running this script, you must have compiled OpenFAST for Simulink to create a DLL (i.e., a shared library like .so, .dylib, .lib, etc.).
+% Before running this script, you must have compiled OpenFAST for Simulink to create a shared library (i.e., .dll, .so, .dylib, .lib, etc.).
 % - If cmake was used, make sure the install directory is specified properly in the `installDir` variable below,
 %   and if using Windows, set `built_with_visualStudio` to false.
 % - If the Visual Studio Solution file contained in the vs-build directory was used to create the DLL on Windows,
@@ -15,7 +15,8 @@
 
 mexname = 'FAST_SFunc'; % base name of the resulting mex file
 
-built_with_visualStudio = true; %if the libraries were built with cmake, set to false
+% If OpenFAST was built with CMake, set to false
+built_with_visualStudio = true;
 
 
 if (ispc && built_with_visualStudio)   
@@ -39,15 +40,9 @@ if (ispc && built_with_visualStudio)
 else    
 %% defaults for cmake builds:
 
-    if ( ispc ) % Windows PC
-        installDir = '../../../install';
-        outDir = fullfile(installDir, 'lib');
-        % If there are shared libraries does it work for outDir to be the local directory?
-    else
-        installDir = '/usr/local';
-        outDir = '.';
-    end
-
+    installDir = '../../../install';
+    % If there are shared libraries does it work for outDir to be the local directory?
+    outDir = fullfile(installDir, 'lib');
     libDir = fullfile(installDir, 'lib');
     includeDir = fullfile(installDir, 'include');
     libName = 'openfastlib';
