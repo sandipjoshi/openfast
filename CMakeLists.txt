@@ -47,6 +47,7 @@ option(BUILD_OPENFAST_SIMULINK_API "Enable building OpenFAST for use with Simuli
 if(BUILD_OPENFAST_SIMULINK_API)
   set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -DCOMPILE_SIMULINK")
 endif()
+option(INTEL_PERFORMANCE "Enable Intel performance tools and directives" off)
 
 # Setup Fortran Compiler options based on architecture/compiler
 set_fast_fortran()

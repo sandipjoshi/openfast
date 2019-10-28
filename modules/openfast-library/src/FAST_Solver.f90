@@ -22,6 +22,9 @@
 !> This module contains the routines used by FAST to solve input-output equations and to advance states.
 MODULE FAST_Solver
 
+#ifdef OPENMP
+   USE OMP_LIB
+#endif
    USE NWTC_Library
    USE NWTC_LAPACK
 
@@ -89,14 +92,20 @@ SUBROUTINE BD_InputSolve( p_FAST, BD, y_AD, u_AD, y_ED, MeshMapData, ErrStat, Er
       IF ( p_FAST%CompAero == Module_AD ) THEN
          
          if (p_FAST%BD_OutputSibling) then
-            
+
+#ifdef OPENMP
+            !$OMP PARALLEL DO
+#endif
             DO K = 1,p_FAST%nBeams ! Loop through all blades
                                     
                CALL Transfer_Line2_to_Line2( y_AD%BladeLoad(k), BD%Input(1,k)%DistrLoad, MeshMapData%AD_L_2_BDED_B(k), ErrStat2, ErrMsg2, u_AD%BladeMotion(k), BD%y(k)%BldMotion )
                   CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
                
             END DO
-            
+#ifdef OPENMP
+         !$OMP END PARALLEL DO  
+#endif
+
          else
             DO K = 1,p_FAST%nBeams ! Loop through all blades
             
@@ -594,13 +603,19 @@ SUBROUTINE AD_InputSolve_NoIfW( p_FAST, u_AD, y_SrvD, y_ED, BD, MeshMapData, Err
    ELSEIF (p_FAST%CompElast == Module_BD ) THEN
       
          ! get them from BeamDyn
+#ifdef OPENMP
+      !$OMP PARALLEL DO
+#endif
       DO k=1,size(u_AD%BladeMotion)
          CALL Transfer_Line2_to_Line2( BD%y(k)%BldMotion, u_AD%BladeMotion(k), MeshMapData%BDED_L_2_AD_L_B(k), ErrStat2, ErrMsg2 )
             CALL SetErrStat(ErrStat2,ErrMsg2,ErrStat,ErrMsg,RoutineName//':u_AD%BladeMotion('//trim(num2lstr(k))//')' )   
       END DO
-      
+#ifdef OPENMP
+      !$OMP END PARALLEL DO
+#endif
             
-   END IF
+
+END IF
    
    
       ! Set Conrol parameter (i.e. flaps) if using ServoDyn
@@ -2127,7 +2142,12 @@ SUBROUTINE FullOpt1_InputOutputSolve( this_time, p_FAST, calcJacobian &
          
          CALL ED_CalcOutput( this_time, u_ED, p_ED, x_ED, xd_ED, z_ED, OtherSt_ED, y_ED, m_ED, ErrStat2, ErrMsg2 )
             CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName  )
-                                 
+
+#ifdef OPENMP
+         !$OMP PARALLEL
+         !$OMP SINGLE
+         !$OMP TASK DEFAULT(SHARED)
+#endif
          IF ( p_FAST%CompSub == Module_SD ) THEN            
             CALL SD_CalcOutput( this_time, u_SD, p_SD, x_SD, xd_SD, z_SD, OtherSt_SD, y_SD, m_SD, ErrStat2, ErrMsg2 )
                CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName  )
@@ -2136,25 +2156,48 @@ SUBROUTINE FullOpt1_InputOutputSolve( this_time, p_FAST, calcJacobian &
                                      y_ExtPtfm, m_ExtPtfm, ErrStat2, ErrMsg2 )
                CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName  )
          END IF
-            
+#ifdef OPENMP
+         !$OMP END TASK
+#endif
+
+#ifdef OPENMP
+         !$OMP TASK DEFAULT(SHARED)
+#endif
          IF ( p_FAST%CompHydro == Module_HD ) THEN 
             CALL HydroDyn_CalcOutput( this_time, u_HD, p_HD, x_HD, xd_HD, z_HD, OtherSt_HD, y_HD, m_HD, ErrStat2, ErrMsg2 )
                CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName  )
          END IF
-         
-         IF ( p_FAST%CompElast == Module_BD .and. BD_Solve_Option1) THEN
+#ifdef OPENMP
+         !$OMP END TASK
+#endif
+
+         IF ( p_FAST%CompElast == Module_BD .and. BD_Solve_Option1) THEN 
             do nb=1,p_FAST%nBeams
+#ifdef OPENMP
+               !$OMP TASK DEFAULT(SHARED) FIRSTPRIVATE(nb)
+#endif
                CALL BD_CalcOutput( this_time, u_BD(nb), p_BD(nb), x_BD(nb), xd_BD(nb), z_BD(nb), OtherSt_BD(nb), y_BD(nb), m_BD(nb), ErrStat2, ErrMsg2, GetWriteOutput )
                   CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName  )
+#ifdef OPENMP
+               !$OMP END TASK
+#endif
             end do            
          END IF
-         
+
+#ifdef OPENMP
+         !$OMP TASK DEFAULT(SHARED)
+#endif
          IF ( p_FAST%CompMooring == Module_Orca ) THEN 
             CALL Orca_CalcOutput( this_time, u_Orca, p_Orca, x_Orca, xd_Orca, z_Orca, OtherSt_Orca, y_Orca, m_Orca, ErrStat2, ErrMsg2 )
                CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName  )
          END IF
+#ifdef OPENMP
+         !$OMP END TASK
+         !$OMP END SINGLE NOWAIT
+         !$OMP END PARALLEL
+#endif
          
-         
+
          IF ( ErrStat >= AbortErrLev ) THEN
             CALL CleanUp()
             RETURN      
@@ -5203,17 +5246,24 @@ SUBROUTINE FAST_AdvanceStates( t_initial, n_t_global, p_FAST, m_FAST, ED, BD, Sr
          CALL SetErrStat( Errstat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
          IF (ErrStat >= AbortErrLev) RETURN
    END DO !j_ss
-      
+
 
       ! BeamDyn doesn't like extrapolated rotations, so we will calculate them from ED and transfer instead of doing a correction step. 
       ! (Also calls ED_CalcOutput here so that we can use it for AeroDyn optimization, too):
    CALL SolveOption2a_Inp2BD(t_global_next, STATE_PRED, p_FAST, m_FAST, ED, BD, AD14, AD, SrvD, IfW, OpFM, MeshMapData, ErrStat2, ErrMsg2, WriteThisStep)
       CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-         
+            
+#ifdef OPENMP
+   !$OMP PARALLEL
+   !$OMP SINGLE
+#endif
    IF ( p_FAST%CompElast == Module_BD ) THEN
-            
+
       DO k=1,p_FAST%nBeams
-            
+
+#ifdef OPENMP
+         !$OMP TASK DEFAULT(SHARED) FIRSTPRIVATE(k)  
+#endif   
          CALL BD_CopyContState   (BD%x( k,STATE_CURR),BD%x( k,STATE_PRED), MESH_UPDATECOPY, Errstat2, ErrMsg2)
             CALL SetErrStat( Errstat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
          CALL BD_CopyDiscState   (BD%xd(k,STATE_CURR),BD%xd(k,STATE_PRED), MESH_UPDATECOPY, Errstat2, ErrMsg2)  
@@ -5231,7 +5281,10 @@ SUBROUTINE FAST_AdvanceStates( t_initial, n_t_global, p_FAST, m_FAST, ED, BD, Sr
                                        BD%xd(k,STATE_PRED), BD%z(k,STATE_PRED), BD%OtherSt(k,STATE_PRED), BD%m(k), ErrStat2, ErrMsg2 )
                CALL SetErrStat( Errstat2, ErrMsg2, ErrStat, ErrMsg, RoutineName//':B'//trim(num2lstr(k)))
          END DO !j_ss
-               
+
+#ifdef OPENMP
+         !$OMP END TASK
+#endif
       END DO !nBeams
       IF (ErrStat >= AbortErrLev) RETURN
       
@@ -5244,6 +5297,9 @@ SUBROUTINE FAST_AdvanceStates( t_initial, n_t_global, p_FAST, m_FAST, ED, BD, Sr
    
                         
    ! InflowWind: get predicted states
+#ifdef OPENMP
+   !$OMP TASK DEFAULT(SHARED)  
+#endif
    IF ( p_FAST%CompInflow == Module_IfW ) THEN
       CALL InflowWind_CopyContState   (IfW%x( STATE_CURR), IfW%x( STATE_PRED), MESH_UPDATECOPY, Errstat2, ErrMsg2)
          CALL SetErrStat( Errstat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
@@ -5263,13 +5319,19 @@ SUBROUTINE FAST_AdvanceStates( t_initial, n_t_global, p_FAST, m_FAST, ED, BD, Sr
             CALL SetErrStat( Errstat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
       END DO !j_ss
    END IF
-   
-   
+
+#ifdef OPENMP
+   !$OMP END TASK 
+#endif
+
       ! because AeroDyn DBEMT states depend heavily on getting inputs correct, we are overwriting its inputs with updated inflow outputs here
    CALL SolveOption2c_Inp2AD_SrvD(t_global_next, STATE_PRED, p_FAST, m_FAST, ED, BD, AD14, AD, SrvD, IfW, OpFM, MeshMapData, ErrStat2, ErrMsg2, WriteThisStep)
       CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
    
    ! AeroDyn: get predicted states
+#ifdef OPENMP
+   !$OMP TASK DEFAULT(SHARED)  
+#endif
    IF ( p_FAST%CompAero == Module_AD14 ) THEN
       CALL AD14_CopyContState   (AD14%x( STATE_CURR), AD14%x( STATE_PRED), MESH_UPDATECOPY, Errstat2, ErrMsg2)
          CALL SetErrStat( Errstat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
@@ -5311,9 +5373,15 @@ SUBROUTINE FAST_AdvanceStates( t_initial, n_t_global, p_FAST, m_FAST, ED, BD, Sr
          endif
       END DO !j_ss
    END IF            
-
+#ifdef OPENMP
+   !$OMP END TASK
+#endif
    
+
    ! ServoDyn: get predicted states
+#ifdef OPENMP
+   !$OMP TASK DEFAULT(SHARED)
+#endif
    IF ( p_FAST%CompServo == Module_SrvD ) THEN
       CALL SrvD_CopyContState   (SrvD%x( STATE_CURR), SrvD%x( STATE_PRED), MESH_UPDATECOPY, Errstat2, ErrMsg2)
          CALL SetErrStat( Errstat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
@@ -5334,9 +5402,15 @@ SUBROUTINE FAST_AdvanceStates( t_initial, n_t_global, p_FAST, m_FAST, ED, BD, Sr
             if (ErrStat >= AbortErrLev) return
       END DO !j_ss
    END IF            
-            
+#ifdef OPENMP
+   !$OMP END TASK         
+#endif
+
 
    ! HydroDyn: get predicted states
+#ifdef OPENMP
+   !$OMP TASK DEFAULT(SHARED)  
+#endif
    IF ( p_FAST%CompHydro == Module_HD ) THEN
       CALL HydroDyn_CopyContState   (HD%x( STATE_CURR), HD%x( STATE_PRED), MESH_UPDATECOPY, Errstat2, ErrMsg2)
          CALL SetErrStat( Errstat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
@@ -5357,9 +5431,15 @@ SUBROUTINE FAST_AdvanceStates( t_initial, n_t_global, p_FAST, m_FAST, ED, BD, Sr
       END DO !j_ss
             
    END IF
-            
-         
+#ifdef OPENMP
+   !$OMP END TASK      
+#endif
+     
+
    ! SubDyn/ExtPtfm: get predicted states
+#ifdef OPENMP
+   !$OMP TASK DEFAULT(SHARED)
+#endif
    IF ( p_FAST%CompSub == Module_SD ) THEN
       CALL SD_CopyContState   (SD%x( STATE_CURR), SD%x( STATE_PRED), MESH_UPDATECOPY, Errstat2, ErrMsg2)
          CALL SetErrStat( Errstat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
@@ -5398,9 +5478,15 @@ SUBROUTINE FAST_AdvanceStates( t_initial, n_t_global, p_FAST, m_FAST, ED, BD, Sr
             CALL SetErrStat( Errstat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
       END DO !j_ss   
    END IF
+#ifdef OPENMP
+   !$OMP END TASK   
+#endif
             
-            
+
    ! Mooring: MAP/FEAM/MD/Orca: get predicted states
+#ifdef OPENMP
+   !$OMP TASK DEFAULT(SHARED) 
+#endif
    IF (p_FAST%CompMooring == Module_MAP) THEN
       CALL MAP_CopyContState   (MAPp%x( STATE_CURR), MAPp%x( STATE_PRED), MESH_UPDATECOPY, Errstat2, ErrMsg2)
          CALL SetErrStat( Errstat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
@@ -5479,9 +5565,15 @@ SUBROUTINE FAST_AdvanceStates( t_initial, n_t_global, p_FAST, m_FAST, ED, BD, Sr
       END DO !j_ss
                
    END IF
-             
+
+#ifdef OPENMP
+   !$OMP END TASK        
+#endif
          
    ! IceFloe/IceDyn: get predicted states
+#ifdef OPENMP
+   !$OMP TASK DEFAULT(SHARED)  
+#endif
    IF ( p_FAST%CompIce == Module_IceF ) THEN
       CALL IceFloe_CopyContState   (IceF%x( STATE_CURR), IceF%x( STATE_PRED), MESH_UPDATECOPY, Errstat2, ErrMsg2)
          CALL SetErrStat( Errstat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
@@ -5524,7 +5616,12 @@ SUBROUTINE FAST_AdvanceStates( t_initial, n_t_global, p_FAST, m_FAST, ED, BD, Sr
       END DO
          
    END IF
-         
+
+#ifdef OPENMP
+   !$OMP END TASK
+   !$OMP END SINGLE NOWAIT
+   !$OMP END PARALLEL
+#endif
 END SUBROUTINE FAST_AdvanceStates
 !----------------------------------------------------------------------------------------------------------------------------------
 !> This routine extrapolates inputs to modules to give predicted values at t+dt.
@@ -5573,9 +5670,16 @@ SUBROUTINE FAST_ExtrapInterpMods( t_global_next, p_FAST, m_FAST, ED, BD, SrvD, A
     
       ErrStat = ErrID_None
       ErrMsg  = ""
-      
+
+#ifdef OPENMP
+      !$OMP PARALLEL
+      !$OMP SINGLE
+#endif
       ! ElastoDyn
       CALL ED_Input_ExtrapInterp(ED%Input, ED%InputTimes, ED%u, t_global_next, ErrStat2, ErrMsg2)
+#ifdef OPENMP
+      !$OMP TASK DEFAULT(SHARED) PRIVATE(j)  
+#endif
          CALL SetErrStat(ErrStat2,ErrMsg2,ErrStat,ErrMsg,RoutineName )
   
       DO j = p_FAST%InterpOrder, 1, -1
@@ -5589,13 +5693,19 @@ SUBROUTINE FAST_ExtrapInterpMods( t_global_next, p_FAST, m_FAST, ED, BD, SrvD, A
          CALL SetErrStat(ErrStat2,ErrMsg2,ErrStat,ErrMsg,RoutineName )
       ED%InputTimes(1)  = t_global_next
       !ED_OutputTimes(1) = t_global_next 
-  
+
+#ifdef OPENMP
+      !$OMP END TASK
+#endif
       
       ! BeamDyn
       IF (p_FAST%CompElast == Module_BD) THEN
          
          DO k = 1,p_FAST%nBeams
-         
+
+#ifdef OPENMP
+            !$OMP TASK DEFAULT(SHARED) PRIVATE(j) FIRSTPRIVATE(k)
+#endif
             CALL BD_Input_ExtrapInterp(BD%Input(:,k), BD%InputTimes(:,k), BD%u(k), t_global_next, ErrStat2, ErrMsg2)
                CALL SetErrStat(ErrStat2,ErrMsg2,ErrStat,ErrMsg,RoutineName )
             
@@ -5609,13 +5719,19 @@ SUBROUTINE FAST_ExtrapInterpMods( t_global_next, p_FAST, m_FAST, ED, BD, SrvD, A
   
             CALL BD_CopyInput (BD%u(k),  BD%Input(1,k),  MESH_UPDATECOPY, Errstat2, ErrMsg2)
                CALL SetErrStat(ErrStat2,ErrMsg2,ErrStat,ErrMsg,RoutineName )
-            BD%InputTimes(1,k) = t_global_next          
-            
+            BD%InputTimes(1,k) = t_global_next   
+
+#ifdef OPENMP
+            !$OMP END TASK
+#endif
          END DO ! k=p_FAST%nBeams
          
       END IF  ! BeamDyn 
       
       ! AeroDyn v14
+#ifdef OPENMP
+      !$OMP TASK DEFAULT(SHARED) PRIVATE(j)   
+#endif
       IF ( p_FAST%CompAero == Module_AD14 ) THEN
          
          CALL AD14_Input_ExtrapInterp(AD14%Input, AD14%InputTimes, AD14%u, t_global_next, ErrStat2, ErrMsg2)
@@ -5651,9 +5767,15 @@ SUBROUTINE FAST_ExtrapInterpMods( t_global_next, p_FAST, m_FAST, ED, BD, SrvD, A
          AD%InputTimes(1)  = t_global_next    
          
       END IF  ! CompAero      
-      
+#ifdef OPENMP
+      !$OMP END TASK
+#endif
+
          
       ! InflowWind
+#ifdef OPENMP
+      !$OMP TASK DEFAULT(SHARED) PRIVATE(j)
+#endif
       IF ( p_FAST%CompInflow == Module_IfW ) THEN
          
          CALL InflowWind_Input_ExtrapInterp(IfW%Input, IfW%InputTimes, IfW%u, t_global_next, ErrStat2, ErrMsg2)
@@ -5671,10 +5793,16 @@ SUBROUTINE FAST_ExtrapInterpMods( t_global_next, p_FAST, m_FAST, ED, BD, SrvD, A
             CALL SetErrStat(ErrStat2,ErrMsg2,ErrStat,ErrMsg,RoutineName )
          IfW%InputTimes(1)  = t_global_next          
             
-      END IF  ! CompInflow          
-      
+      END IF  ! CompInflow  
+
+#ifdef OPENMP
+      !$OMP END TASK
+#endif
       
       ! ServoDyn
+#ifdef OPENMP
+      !$OMP TASK DEFAULT(SHARED) PRIVATE(j)
+#endif
       IF ( p_FAST%CompServo == Module_SrvD ) THEN
          
          CALL SrvD_Input_ExtrapInterp(SrvD%Input, SrvD%InputTimes, SrvD%u, t_global_next, ErrStat2, ErrMsg2)
@@ -5693,8 +5821,14 @@ SUBROUTINE FAST_ExtrapInterpMods( t_global_next, p_FAST, m_FAST, ED, BD, SrvD, A
          SrvD%InputTimes(1)  = t_global_next          
             
       END IF  ! ServoDyn       
-      
+#ifdef OPENMP
+      !$OMP END TASK
+#endif
+
       ! HydroDyn
+#ifdef OPENMP
+      !$OMP TASK DEFAULT(SHARED) PRIVATE(j)
+#endif
       IF ( p_FAST%CompHydro == Module_HD ) THEN
 
          CALL HydroDyn_Input_ExtrapInterp(HD%Input, HD%InputTimes, HD%u, t_global_next, ErrStat2, ErrMsg2)
@@ -5715,8 +5849,14 @@ SUBROUTINE FAST_ExtrapInterpMods( t_global_next, p_FAST, m_FAST, ED, BD, SrvD, A
             
       END IF  ! HydroDyn
 
+#ifdef OPENMP
+      !$OMP END TASK
+#endif
       
       ! SubDyn/ExtPtfm_MCKF
+#ifdef OPENMP
+      !$OMP TASK DEFAULT(SHARED) PRIVATE(j)   
+#endif
       IF ( p_FAST%CompSub == Module_SD ) THEN
 
          CALL SD_Input_ExtrapInterp(SD%Input, SD%InputTimes, SD%u, t_global_next, ErrStat2, ErrMsg2)
@@ -5751,10 +5891,16 @@ SUBROUTINE FAST_ExtrapInterpMods( t_global_next, p_FAST, m_FAST, ED, BD, SrvD, A
             CALL SetErrStat(ErrStat2,ErrMsg2,ErrStat,ErrMsg,RoutineName )
          ExtPtfm%InputTimes(1) = t_global_next          
       END IF  ! SubDyn/ExtPtfm_MCKF
-      
+
+#ifdef OPENMP
+      !$OMP END TASK
+#endif
       
       ! Mooring (MAP , FEAM , MoorDyn)
       ! MAP
+#ifdef OPENMP
+      !$OMP TASK DEFAULT(SHARED) PRIVATE(j)
+#endif
       IF ( p_FAST%CompMooring == Module_MAP ) THEN
          
          CALL MAP_Input_ExtrapInterp(MAPp%Input, MAPp%InputTimes, MAPp%u, t_global_next, ErrStat2, ErrMsg2)
@@ -5827,11 +5973,17 @@ SUBROUTINE FAST_ExtrapInterpMods( t_global_next, p_FAST, m_FAST, ED, BD, SrvD, A
          Orca%InputTimes(1)  = t_global_next          
          
       END IF  ! MAP/FEAM/MoorDyn/OrcaFlex
-      
-           
+
+
+#ifdef OPENMP
+      !$OMP END TASK
+#endif
             
       ! Ice (IceFloe or IceDyn)
       ! IceFloe
+#ifdef OPENMP
+      !$OMP TASK DEFAULT(SHARED) PRIVATE(i,j) 
+#endif
       IF ( p_FAST%CompIce == Module_IceF ) THEN
          
          CALL IceFloe_Input_ExtrapInterp(IceF%Input, IceF%InputTimes, IceF%u, t_global_next, ErrStat2, ErrMsg2)
@@ -5875,6 +6027,11 @@ SUBROUTINE FAST_ExtrapInterpMods( t_global_next, p_FAST, m_FAST, ED, BD, SrvD, A
       END IF  ! IceFloe/IceDyn
 
 
+#ifdef OPENMP
+      !$OMP END TASK
+      !$OMP END SINGLE NOWAIT
+      !$OMP END PARALLEL
+#endif
 END SUBROUTINE FAST_ExtrapInterpMods
 !----------------------------------------------------------------------------------------------------------------------------------
                    
