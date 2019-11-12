@@ -309,7 +309,7 @@ SUBROUTINE WAMIT_Init( InitInp, u, p, x, xd, z, OtherState, y, m, Interval, Init
             CALL Cleanup()
             RETURN
          END IF
-      p%HdroSttc (:,:) = 0.0 ! Initialize to zero
+      p%HdroSttc = 0.0 ! Initialize to zero
 
       DO    ! Loop through all rows in the file
 
@@ -463,8 +463,8 @@ SUBROUTINE WAMIT_Init( InitInp, u, p, x, xd, z, OtherState, y, m, Interval, Init
       PrvPer         = 0.0    ! Initialize to a don't care
       FirstPass      = .TRUE. ! Initialize to .TRUE. for the first pass
 
-      HdroAddMs(:,:) = 0.0    ! Initialize to zero
-      HdroDmpng(:,:) = 0.0    ! Initialize to zero
+      HdroAddMs = 0.0    ! Initialize to zero
+      HdroDmpng = 0.0    ! Initialize to zero
 
       DO    ! Loop through all rows in the file
 
@@ -737,7 +737,7 @@ if (p%ExctnMod == 1 ) then
       PrvDir           = 0.0     ! Initialize to a don't care
       FirstPass        = .TRUE.  ! Initialize to .TRUE. for the first pass
 
-      HdroExctn(:,:,:) = 0.0     ! Initialize to zero
+      HdroExctn = 0.0     ! Initialize to zero
 
       DO    ! Loop through all rows in the file
 
@@ -1504,25 +1504,23 @@ SUBROUTINE WAMIT_CalcOutput( Time, u, p, x, xd, z, OtherState, y, m, ErrStat, Er
          END IF
 
          DO I = 1,6     ! Loop through all wave excitation forces and moments
-            m%F_Waves1(I) = InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime(:), p%WaveExctn(:,I), &
-                                                     m%LastIndWave, p%NStepWave + 1       )
+            m%F_Waves1(I) = InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime, p%WaveExctn(:,I), &
+                                                   m%LastIndWave, p%NStepWave + 1       )
          END DO          ! I - All wave excitation forces and moments
-         
+      
       else if ( p%ExctnMod == 2 ) then
-         
+               
          call SS_Exc_CalcOutput( Time, m%SS_Exctn_u, p%SS_Exctn, x%SS_Exctn, xd%SS_Exctn,  &
-                                z%SS_Exctn, OtherState%SS_Exctn, m%SS_Exctn_y, m%SS_Exctn, ErrStat, ErrMsg )
+                              z%SS_Exctn, OtherState%SS_Exctn, m%SS_Exctn_y, m%SS_Exctn, ErrStat, ErrMsg )
          m%F_Waves1  (:) = m%SS_Exctn_y%y
          
       end if
-      
-      
 
          
          ! Determine the rotational angles from the direction-cosine matrix
       rotdisp = GetSmllRotAngs ( u%Mesh%Orientation(:,:,1), ErrStat, ErrMsg )
 
-      q         = reshape((/real(u%Mesh%TranslationDisp(:,1),ReKi),rotdisp(:)/),(/6/))
+      q         = reshape((/real(u%Mesh%TranslationDisp(:,1),ReKi),rotdisp/),(/6/))
       qdot      = reshape((/u%Mesh%TranslationVel(:,1),u%Mesh%RotationVel(:,1)/),(/6/))
       qdotdot   = reshape((/u%Mesh%TranslationAcc(:,1),u%Mesh%RotationAcc(:,1)/),(/6/))
       
@@ -1537,7 +1535,7 @@ SUBROUTINE WAMIT_CalcOutput( Time, u, p, x, xd, z, OtherState, y, m, ErrStat, Er
       
          ! Compute the load contribution from hydrostatics:
 
-      m%F_HS(:) =  0.0                              ! Initialize to zero...
+      m%F_HS    =  0.0                              ! Initialize to zero...
       m%F_HS(3) =  p%RhoXg*p%PtfmVol0               ! except for the hydrostatic buoyancy force from Archimede's Principle when the support platform is in its undisplaced position
       m%F_HS(4) =  p%RhoXg*p%PtfmVol0*p%PtfmCOByt   ! and the moment about X due to the COB being offset from the WAMIT reference point
       m%F_HS(5) = -p%RhoXg*p%PtfmVol0*p%PtfmCOBxt   ! and the moment about Y due to the COB being offset from the WAMIT reference point
@@ -1560,19 +1558,19 @@ SUBROUTINE WAMIT_CalcOutput( Time, u, p, x, xd, z, OtherState, y, m, ErrStat, Er
          m%Conv_Rdtn_u%Velocity = qdot
          CALL Conv_Rdtn_CalcOutput( Time, m%Conv_Rdtn_u, p%Conv_Rdtn, x%Conv_Rdtn, xd%Conv_Rdtn,  &
                                 z%Conv_Rdtn, OtherState%Conv_Rdtn, m%Conv_Rdtn_y, m%Conv_Rdtn, ErrStat, ErrMsg )
-         m%F_Rdtn  (:) = m%Conv_Rdtn_y%F_Rdtn       
+         m%F_Rdtn = m%Conv_Rdtn_y%F_Rdtn       
 
       ELSE IF ( p%RdtnMod == 2 )  THEN 
          m%SS_Rdtn_u%dq = qdot
          CALL SS_Rad_CalcOutput( Time, m%SS_Rdtn_u, p%SS_Rdtn, x%SS_Rdtn, xd%SS_Rdtn,  &
                                 z%SS_Rdtn, OtherState%SS_Rdtn, m%SS_Rdtn_y, m%SS_Rdtn, ErrStat, ErrMsg )
-         m%F_Rdtn  (:) = m%SS_Rdtn_y%y
+         m%F_Rdtn = m%SS_Rdtn_y%y
       ELSE ! We must not be modeling wave radiation damping.
 
 
       ! Set the total load contribution from radiation damping to zero:
 
-         m%F_Rdtn        (:) = 0.0
+         m%F_Rdtn = 0.0
 
 
       END IF       

@@ -1764,7 +1764,7 @@ SUBROUTINE VariousWaves_Init ( InitInp, InitOut, ErrStat, ErrMsg )
       END IF
       
          ! We'll need the following for wave stretching once we implement it.
-      CALL    ApplyFFT_cx (  InitOut%WaveElev0    (0:InitOut%NStepWave-1),  tmpComplexArr    (:  ), FFT_Data, ErrStatTmp )
+      CALL    ApplyFFT_cx (  InitOut%WaveElev0(0:InitOut%NStepWave-1), tmpComplexArr, FFT_Data, ErrStatTmp )
       CALL SetErrStat(ErrStatTmp,'Error occured while applying the FFT to WaveElev0.',ErrStat,ErrMsg,'VariousWaves_Init')
       IF ( ErrStat >= AbortErrLev ) THEN
          CALL CleanUp()

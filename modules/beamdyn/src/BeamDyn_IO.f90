@@ -1951,7 +1951,7 @@ SUBROUTINE BD_PrintSum( p, x, m, InitInp, ErrStat, ErrMsg )
    WRITE (UnSu,'(A,F13.3)' ) 'Blade length                 (m)    ', p%blade_length
 
    WRITE (UnSu,'(A)')  'Blade center of mass (IEC coords): '
-   WRITE (UnSu,'(3ES18.5)' ) p%blade_CG(:)
+   WRITE (UnSu,'(3ES18.5)' ) p%blade_CG
 
    WRITE (UnSu,'(A)')  'Blade mass moment of inertia: '
    DO i=1,3
@@ -1959,7 +1959,7 @@ SUBROUTINE BD_PrintSum( p, x, m, InitInp, ErrStat, ErrMsg )
    ENDDO
 
    WRITE (UnSu,'(A)')  'Global position vector (IEC coords):'
-   WRITE (UnSu,'(3ES18.5)' ) p%GlbPos(:)
+   WRITE (UnSu,'(3ES18.5)' ) p%GlbPos
 
    WRITE (UnSu,'(A)')  'Global rotation tensor (IEC coords):'
    DO i=1,3
@@ -1972,10 +1972,10 @@ SUBROUTINE BD_PrintSum( p, x, m, InitInp, ErrStat, ErrMsg )
    ENDDO
 
    WRITE (UnSu,'(A)')  'Global rotation WM parameters (IEC coords):'
-   WRITE (UnSu,'(3ES18.5)' ) p%Glb_crv(:)
+   WRITE (UnSu,'(3ES18.5)' ) p%Glb_crv
 
    WRITE (UnSu,'(A)')  'Gravity vector (m/s^2) (IEC coords):'
-   WRITE (UnSu,'(3ES18.5)' ) p%gravity(:)
+   WRITE (UnSu,'(3ES18.5)' ) p%gravity
 
 !FIXME:analysis_type
    IF(p%analysis_type .EQ. BD_STATIC_ANALYSIS) THEN

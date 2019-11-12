@@ -134,7 +134,7 @@ module BeamDyn_driver_subs
    !---------------------- GRAVITY PARAMETER --------------------------------------
    CALL ReadCom(UnIn,DvrInputFile,'Section Header: Gravity Parameter',ErrStat2,ErrMsg2,UnEc)
       CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-   InitInputData%gravity(:) = 0.0_ReKi
+   InitInputData%gravity = 0.0_ReKi
    CALL ReadVar(UnIn,DvrInputFile,InitInputData%gravity(1),"InitInputData%gravity(1)", "gravity vector X",ErrStat2,ErrMsg2,UnEc)
       CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )  
    CALL ReadVar(UnIn,DvrInputFile,InitInputData%gravity(2),"InitInputData%gravity(2)", "gravity vector Y",ErrStat2,ErrMsg2,UnEc)
@@ -148,9 +148,9 @@ module BeamDyn_driver_subs
    !---------------------- FRAME PARAMETER --------------------------------------
    CALL ReadCom(UnIn,DvrInputFile,'Section Header: Frame Parameter',ErrStat2,ErrMsg2,UnEc)
       CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-   InitInputData%GlbPos(:)   = 0.0_ReKi
-   InitInputData%GlbRot(:,:) = 0.0_R8Ki
-   InitInputData%RootOri(:,:) = 0.0_R8Ki
+   InitInputData%GlbPos = 0.0_ReKi
+   InitInputData%GlbRot = 0.0_R8Ki
+   InitInputData%RootOri = 0.0_R8Ki
    CALL ReadVar(UnIn,DvrInputFile,InitInputData%GlbPos(1),"InitInputData%GlbPos(1)", "position vector X",ErrStat2,ErrMsg2,UnEc)
       CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )  
    CALL ReadVar(UnIn,DvrInputFile,InitInputData%GlbPos(2),"InitInputData%GlbPos(2)", "position vector Y",ErrStat2,ErrMsg2,UnEc)
@@ -213,7 +213,7 @@ module BeamDyn_driver_subs
        return
    end if
    
-   InitInputData%RootVel(1:3) = cross_product(InitInputData%RootVel(4:6),InitInputData%GlbPos(:))
+   InitInputData%RootVel(1:3) = cross_product(InitInputData%RootVel(4:6),InitInputData%GlbPos)
   
    !---------------------- APPLIED FORCE --------------------------------
    CALL ReadCom(UnIn,DvrInputFile,'Section Header: Applied Force',ErrStat2,ErrMsg2,UnEc)

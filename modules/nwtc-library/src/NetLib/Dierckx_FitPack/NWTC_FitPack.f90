@@ -235,7 +235,7 @@ CONTAINS
 !
          ! This routine is just a dummy.
 
-      SplCoef(:) = 0.0_R8Ki
+      SplCoef = 0.0_R8Ki
 
       CALL ExitThisRoutine ( ErrID_Fatal, ' Error >> FitPack_RegridLite is not available for 8-byte real precision.' )
 !

@@ -946,7 +946,7 @@ SUBROUTINE MeshWrVTK_PointSurface ( RefPoint, M, FileRootName, VTKcount, OutputF
             WRITE(U,*)ElemNames(i),' nelem: ',M%ElemTable(i)%nelem,' max: ',M%ElemTable(i)%maxelem
             IF(M%initialized.AND.ASSOCIATED(M%ElemTable(i)%Elements))THEN
               DO j = 1,min(nn,M%ElemTable(i)%nelem)
-                write(U,*)' ',j,M%ElemTable(i)%Elements(j)%ElemNodes(:)
+                write(U,*)' ',j,M%ElemTable(i)%Elements(j)%ElemNodes
               ENDDO
             ENDIF
           ENDIF
@@ -2329,7 +2329,7 @@ SUBROUTINE MeshWrVTK_PointSurface ( RefPoint, M, FileRootName, VTKcount, OutputF
        RETURN  ! Early return
      ENDIF
 
-     IF ( ALL( Mesh%ElemTable(:)%nelem /= SUM(Mesh%ElemTable(:)%nelem ) ) ) THEN
+     IF ( ALL( Mesh%ElemTable%nelem /= SUM(Mesh%ElemTable%nelem ) ) ) THEN
        ErrStat = ErrID_Fatal
        ErrMess = "MeshCommit: a mesh can have only one type of element."
        RETURN  ! Early return

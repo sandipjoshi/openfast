@@ -606,7 +606,7 @@ SUBROUTINE UserWaveElevations_Init ( InitInp, InitOut, ErrStat, ErrMsg )
 
       ! Set the values
    TmpFFTWaveElev          =  0.0_SiKi
-   InitOut%WaveElevC0(:,:) =  0.0_SiKi
+   InitOut%WaveElevC0      =  0.0_SiKi
 
 
       ! Copy values over
@@ -623,7 +623,7 @@ SUBROUTINE UserWaveElevations_Init ( InitInp, InitOut, ErrStat, ErrMsg )
    END IF
 
       ! Apply the forward FFT to get the real and imaginary parts of the frequency information.      
-   CALL    ApplyFFT_f (  TmpFFTWaveElev(:), FFT_Data, ErrStatTmp )    ! Note that the TmpFFTWaveElev now contains the real and imaginary bits.
+   CALL    ApplyFFT_f (  TmpFFTWaveElev, FFT_Data, ErrStatTmp )    ! Note that the TmpFFTWaveElev now contains the real and imaginary bits.
    CALL SetErrStat(ErrStatTmp,'Error occured while applying the forwards FFT to TmpFFTWaveElev array.',ErrStat,ErrMsg,RoutineName)
    IF ( ErrStat >= AbortErrLev ) THEN
       CALL CleanUp()
@@ -802,7 +802,7 @@ SUBROUTINE UserWaves_Init ( InitInp, InitOut, ErrStat, ErrMsg )
       
    END DO
    
-   InitOut%WaveVel (:,:,1)  = WaveData(:,:)
+   InitOut%WaveVel (:,:,1)  = WaveData
    
    ! Now read the remaining files and check that the elements are consistent with the first file
    DO iFile = 2,7
@@ -854,17 +854,17 @@ SUBROUTINE UserWaves_Init ( InitInp, InitOut, ErrStat, ErrMsg )
       END DO
       SELECT CASE (iFile)
          CASE (1)              
-            InitOut%WaveVel (:,:,1)  = WaveData(:,:)
+            InitOut%WaveVel (:,:,1)  = WaveData
          CASE (2)             
-            InitOut%WaveVel (:,:,2)  = WaveData(:,:)
+            InitOut%WaveVel (:,:,2)  = WaveData
          CASE (3)             
-            InitOut%WaveVel (:,:,3)  = WaveData(:,:) 
+            InitOut%WaveVel (:,:,3)  = WaveData 
          CASE (4)             
-            InitOut%WaveAcc (:,:,1)  = WaveData(:,:)
+            InitOut%WaveAcc (:,:,1)  = WaveData
          CASE (5)             
-            InitOut%WaveAcc (:,:,2)  = WaveData(:,:)
+            InitOut%WaveAcc (:,:,2)  = WaveData
          CASE (6)             
-            InitOut%WaveAcc (:,:,3)  = WaveData(:,:) 
+            InitOut%WaveAcc (:,:,3)  = WaveData 
          CASE (7)              
             InitOut%WaveDynP         = WaveData
       END SELECT

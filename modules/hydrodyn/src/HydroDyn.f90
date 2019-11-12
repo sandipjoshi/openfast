@@ -1859,8 +1859,8 @@ SUBROUTINE HydroDyn_UpdateStates( t, n, Inputs, InputTimes, p, x, xd, z, OtherSt
          Inputs_FIT(I)%roll     = rotdisp(1)
          Inputs_FIT(I)%pitch    = rotdisp(2)
          Inputs_FIT(I)%yaw      = rotdisp(3)
-         Inputs_FIT(I)%si_t(:)  = Inputs(I)%Mesh%TranslationDisp(:,1)             
-         Inputs_FIT(I)%vel_t(:) = Inputs(I)%Mesh%TranslationVel (:,1)  
+         Inputs_FIT(I)%si_t  = Inputs(I)%Mesh%TranslationDisp(:,1)             
+         Inputs_FIT(I)%vel_t = Inputs(I)%Mesh%TranslationVel (:,1)  
       END DO
       
          
@@ -1952,7 +1952,7 @@ SUBROUTINE HydroDyn_CalcOutput( Time, u, p, x, xd, z, OtherState, y, m, ErrStat,
       rotdisp = GetSmllRotAngs ( u%Mesh%Orientation(:,:,1), ErrStat2, ErrMsg2 )
          CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, 'HydroDyn_CalcOutput' )                  
 
-      q         = reshape((/REAL(u%Mesh%TranslationDisp(:,1),ReKi),rotdisp(:)/),(/6/))
+      q         = reshape((/REAL(u%Mesh%TranslationDisp(:,1),ReKi),rotdisp/),(/6/))
       qdot      = reshape((/u%Mesh%TranslationVel(:,1),u%Mesh%RotationVel(:,1)/),(/6/))
       qdotsq    = abs(qdot)*qdot
       qdotdot   = reshape((/u%Mesh%TranslationAcc(:,1),u%Mesh%RotationAcc(:,1)/),(/6/))
@@ -1995,13 +1995,13 @@ SUBROUTINE HydroDyn_CalcOutput( Time, u, p, x, xd, z, OtherState, y, m, ErrStat,
          Inputs_FIT%roll     = rotdisp(1)
          Inputs_FIT%pitch    = rotdisp(2)
          Inputs_FIT%yaw      = rotdisp(3)
-         Inputs_FIT%si_t(:)  = u%Mesh%TranslationDisp(:,1)             
-         Inputs_FIT%vel_t(:) = u%Mesh%TranslationVel (:,1)  
+         Inputs_FIT%si_t  = u%Mesh%TranslationDisp(:,1)             
+         Inputs_FIT%vel_t = u%Mesh%TranslationVel (:,1)  
          CALL FIT_CalcOutput( Time, Inputs_FIT, p%FIT, FIT_x, xd%FIT, FIT_z, OtherState%FIT, y%FIT, ErrStat2, ErrMsg2 ) 
          
             ! Add FIT forces to the HydroDyn output mesh
-         y%Mesh%Force (:,1) = y%Mesh%Force (:,1) + y%FIT%F(:)
-         y%Mesh%Moment(:,1) = y%Mesh%Moment(:,1) + y%FIT%M(:)
+         y%Mesh%Force (:,1) = y%Mesh%Force (:,1) + y%FIT%F
+         y%Mesh%Moment(:,1) = y%Mesh%Moment(:,1) + y%FIT%M
 #endif  
          
       END IF
@@ -2045,9 +2045,9 @@ SUBROUTINE HydroDyn_CalcOutput( Time, u, p, x, xd, z, OtherState, y, m, ErrStat,
          ! Compute the wave elevations at the requested output locations for this time.  Note that p%WaveElev has the second order added to it already.
          
       DO I=1,p%NWaveElev   
-         WaveElev1(I)   = InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime(:), p%WaveElev1(:,I),          &
+         WaveElev1(I)   = InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime, p%WaveElev1(:,I),          &
                                     m%LastIndWave, p%NStepWave + 1       )                      
-         WaveElev(I)    = InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime(:), p%WaveElev(:,I), &
+         WaveElev(I)    = InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime, p%WaveElev(:,I), &
                                     m%LastIndWave, p%NStepWave + 1       )
 
       END DO

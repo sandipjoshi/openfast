@@ -888,10 +888,10 @@ SUBROUTINE BD_diffmtc( nodes_per_elem,GLL_nodes,QPtN,nqp,Shp,ShpDer )
    INTEGER(IntKi)              :: k
 
    ! See Bauchau equations 17.1 - 17.5
-
-   Shp(:,:)     = 0.0_BDKi
-   ShpDer(:,:)  = 0.0_BDKi
-
+   
+   Shp    = 0.0_BDKi
+   ShpDer = 0.0_BDKi
+   
 
    do j = 1,nqp
       do l = 1,nodes_per_elem
@@ -1040,7 +1040,7 @@ SUBROUTINE BD_ComputeIniNodalCrv(e1, phi, cc, ErrStat, ErrMsg)
    PhiRad = phi*D2R_D  ! convert to radians
 
       ! Note that e1 corresponds with the Z-axis direction in our formulation.  For Beam theory, this would be the x-axis.
-   Rr(:,3)  =  e1(:)
+   Rr(:,3)  =  e1
 
    e2(3)    = -(e1(1)*COS(PhiRad) + e1(2)*SIN(PhiRad))/e1(3)
    Delta    = SQRT(1.0_BDKi + e2(3)*e2(3))

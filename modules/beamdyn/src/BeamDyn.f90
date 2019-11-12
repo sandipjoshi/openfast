@@ -215,12 +215,12 @@ SUBROUTINE BD_Init( InitInp, u, p, x, xd, z, OtherState, y, MiscVar, Interval, I
       if (EqualRealNos(denom,0.0_BDKi)) then
          call SetErrStat(ErrID_Fatal,"Cannot invert matrix for pitch actuator: J+c*dt+k*dt^2 is zero.",ErrStat,ErrMsg,RoutineName)
       else
-         p%torqM(:,:) =  p%torqM / denom
+         p%torqM =  p%torqM / denom
       end if
 
          ! Calculate the pitch angle
-      TmpDCM(:,:) = MATMUL(u%RootMotion%Orientation(:,:,1),TRANSPOSE(u%HubMotion%Orientation(:,:,1)))
-      temp_CRV(:) = EulerExtract(TmpDCM)
+      TmpDCM = MATMUL(u%RootMotion%Orientation(:,:,1),TRANSPOSE(u%HubMotion%Orientation(:,:,1)))
+      temp_CRV = EulerExtract(TmpDCM)
       xd%thetaP = -temp_CRV(3)
       xd%thetaPD = 0.0_BDKi
    end if
@@ -398,7 +398,7 @@ subroutine InitializeMassStiffnessMatrices(InputFileData,p,ErrStat, ErrMsg)
              return
           end if
 
-      temp_ratio(:,:) = 0.0_BDKi
+      temp_ratio = 0.0_BDKi
       DO idx_qp=1,p%nqp
          temp_ratio(idx_qp,1) = ((p%QPtN(idx_qp) + 1.0_BDKi)/2.0_BDKi)*p%member_eta(1)  ! get QPtN ratio in [0,1] and multiply by member (element)'s relative length along the beam [0,1]
       ENDDO
@@ -804,9 +804,9 @@ SUBROUTINE BD_InitShpDerJaco( GLL_Nodes, p )
 
    DO nelem = 1,p%elem_total
       DO idx_qp = 1, p%nqp
-         Gup0(:) = 0.0_BDKi
+         Gup0 = 0.0_BDKi
          DO i=1,p%nodes_per_elem
-            Gup0(:) = Gup0(:) + p%ShpDer(i,idx_qp)*p%uuN0(1:3,i,nelem)
+            Gup0 = Gup0 + p%ShpDer(i,idx_qp)*p%uuN0(1:3,i,nelem)
          ENDDO
          p%Jacobian(idx_qp,nelem) = TwoNorm(Gup0)
       ENDDO
@@ -1426,8 +1426,8 @@ subroutine Init_u( InitInp, p, u, ErrStat, ErrMsg )
    u%RootMotion%Orientation(1:3,1:3,1) = InitInp%RootOri(1:3,1:3)
    u%RootMotion%TranslationVel(1:3,1)  = InitInp%RootVel(1:3)
    u%RootMotion%RotationVel(1:3,1)     = InitInp%RootVel(4:6)
-   u%RootMotion%TranslationAcc(:,:)    = 0.0_ReKi
-   u%RootMotion%RotationAcc(:,:)       = 0.0_ReKi
+   u%RootMotion%TranslationAcc         = 0.0_ReKi
+   u%RootMotion%RotationAcc            = 0.0_ReKi
 
    !.................................
    ! u%PointLoad (currently not used in FAST; from BD driver only)
@@ -1775,8 +1775,8 @@ subroutine Init_OtherStates( p, OtherState, ErrStat, ErrMsg )
 
    OtherState%InitAcc = .false. ! accelerations have not been initialized, yet
 
-   OtherState%acc(:,:) = 0.0_BDKi
-   OtherState%xcc(:,:) = 0.0_BDKi
+   OtherState%acc = 0.0_BDKi
+   OtherState%xcc = 0.0_BDKi
 
    
       ! This is used to make sure we only run the quasi-static initialization for the states at T=0 when p%analysis_type == BD_DYN_SSS_ANALYSIS (otherwise don't rerun it).
@@ -1812,8 +1812,8 @@ subroutine Init_ContinuousStates( p, u, x, ErrStat, ErrMsg )
          return
       end if
 
-   x%q(:,:)    = 0.0_BDKi
-   x%dqdt(:,:) = 0.0_BDKi
+   x%q    = 0.0_BDKi
+   x%dqdt = 0.0_BDKi
 
 
       ! create copy of inputs, u, to convert to BeamDyn-internal system inputs, u_tmp, which is used to initialize states:
@@ -2291,11 +2291,11 @@ SUBROUTINE BD_QuadraturePointDataAt0( p )
             !> Add the blade root rotation parameters. That is,
             !! compose the rotation parameters calculated with the shape functions with the rotation parameters
             !! for the blade root.
-         rot0_temp(:) = p%uuN0(4:6,1,nelem)        ! Rotation at root
-         rotu_temp(:) = p%uu0( 4:6,idx_qp,nelem)   ! Rotation at current GLL point without root rotation
+         rot0_temp = p%uuN0(4:6,1,nelem)        ! Rotation at root
+         rotu_temp = p%uu0( 4:6,idx_qp,nelem)   ! Rotation at current GLL point without root rotation
 
          CALL BD_CrvCompose(rot_temp,rot0_temp,rotu_temp,FLAG_R1R2)  ! rot_temp = rot0_temp composed with rotu_temp
-         p%uu0(4:6,idx_qp,nelem) = rot_temp(:)     ! Rotation parameters at current GLL point with the root orientation
+         p%uu0(4:6,idx_qp,nelem) = rot_temp     ! Rotation parameters at current GLL point with the root orientation
 
 
             !> Set the initial value of \f$ x_0^\prime \f$, the derivative with respect to \f$ \hat{x} \f$-direction
@@ -2692,12 +2692,12 @@ SUBROUTINE BD_ElasticForce(nelem,p,m,fact)
             !!          \underline{\underline{0}}        &     \mu      - \tilde{M}
             !!       \end{bmatrix}
             !! \f$
-         Wrk33(:,:) = OuterProduct(m%qp%RR0(1:3,3,idx_qp,nelem), m%qp%RR0(1:3,3,idx_qp,nelem))     ! z-direction in IEC coords
-         C21(:,:)   = m%qp%Stif(4:6,1:3,idx_qp,nelem) + cet*k1s*Wrk33(:,:)
+         Wrk33 = OuterProduct(m%qp%RR0(1:3,3,idx_qp,nelem), m%qp%RR0(1:3,3,idx_qp,nelem))     ! z-direction in IEC coords
+         C21   = m%qp%Stif(4:6,1:3,idx_qp,nelem) + cet*k1s*Wrk33
 
          tildeE     = SkewSymMat(m%qp%E1(:,idx_qp,nelem))
-         epsi(:,:)  = MATMUL(m%qp%Stif(1:3,1:3,idx_qp,nelem),tildeE)    ! Stif is RR0 * p%Stif0_QP * RR0^T
-         mu(:,:)    = MATMUL(C21,tildeE)
+         epsi       = MATMUL(m%qp%Stif(1:3,1:3,idx_qp,nelem),tildeE)    ! Stif is RR0 * p%Stif0_QP * RR0^T
+         mu         = MATMUL(C21,tildeE)
 
          m%qp%Oe(:,:,idx_qp,nelem)     = 0.0_BDKi
          m%qp%Oe(1:3,4:6,idx_qp,nelem) = epsi(1:3,1:3) - SkewSymMat(m%qp%Fc(1:3,idx_qp,nelem))
@@ -3418,7 +3418,7 @@ SUBROUTINE BD_Static(t,u,utimes,p,x,OtherState,m,ErrStat,ErrMsg)
    DO j=1,p%ld_retries
 
        CALL BD_DistrLoadCopy( p, u_interp, m, load_test ) ! move the input loads from u_interp into misc vars
-       gravity_temp(:) = p%gravity(:)*load_test
+       gravity_temp = p%gravity*load_test
 
        CALL BD_StaticSolution(x, gravity_temp, p, m, piter, ErrStat2, ErrMsg2)
        call SetErrStat(ErrStat2,ErrMsg2,ErrStat, ErrMsg, RoutineName)  ! concerned about error reporting
@@ -4070,10 +4070,10 @@ SUBROUTINE BD_QuasiStaticUpdateConfiguration(u,p,m,x,OtherState)
          ! Calculate the new rotation.  Combine the original rotation parameters, x%q(4:6,:),
          ! with the rotation displacement parameters, m%Solution(4:6,i).  Note that the result must
          ! be composed from the two sets of rotation parameters
-       rotf_temp(:)  =  x%q(4:6,i)
-       roti_temp(:)  =  m%Solution(4:6,i)
+       rotf_temp  =  x%q(4:6,i)
+       roti_temp  =  m%Solution(4:6,i)
        CALL BD_CrvCompose(rot_temp,roti_temp,rotf_temp,FLAG_R1R2) ! R(rot_temp) = R(roti_temp) R(rotf_temp)
-       x%q(4:6,i) = rot_temp(:)
+       x%q(4:6,i) = rot_temp
 
    ENDDO
 
@@ -4212,8 +4212,8 @@ SUBROUTINE BD_InternalForceMoment( x, p, m )
 
 
       ! Initialize all values to zero.
-   m%BldInternalForceFE(:,:) = 0.0_BDKi
-   m%BldInternalForceQP(:,:) = 0.0_BDKi
+   m%BldInternalForceFE = 0.0_BDKi
+   m%BldInternalForceQP = 0.0_BDKi
 
       ! Integrate quadrature points to get the FE nodes elastic force per length.
    m%EFint(:,:,:) = 0.0_BDKi
@@ -4297,7 +4297,7 @@ SUBROUTINE BD_InternalForceMoment( x, p, m )
       ! Add root reaction: For the dynamic solves, this includes the mass*acceleration terms for the first node
       !                    For the static solve, this is in the first node for static case and does not need
       !                    contributions from the outboard sections due to how the solve is performed.
-   m%BldInternalForceFE(1:6,1) =    m%FirstNodeReactionLclForceMoment(:)
+   m%BldInternalForceFE(1:6,1) =    m%FirstNodeReactionLclForceMoment
 
       ! Point force at the tip is not counted at the last point. However, its contribution to the moment, and the tip moment are counted already.
    m%BldInternalForceFE(1:3,p%node_total) = m%BldInternalForceFE(1:3,p%node_total) + (1.0_BDKi - p%FEweight(p%nodes_per_elem,p%elem_total))*m%PointLoadLcl(1:3,p%node_total)
@@ -4442,7 +4442,7 @@ SUBROUTINE BD_GA2(t,n,u,utimes,p,x,xd,z,OtherState,m,ErrStat,ErrMsg)
          end if
 
          ! initialize GA2 algorithm acceleration variable, OtherState%Xcc (acts as a filtering value on OtherState%acc)
-      OtherState%Xcc(:,:)  = OtherState%Acc(:,:)
+      OtherState%Xcc  = OtherState%Acc
  
          ! accelerations have been initialized
       OtherState%InitAcc = .true.
@@ -4698,7 +4698,7 @@ SUBROUTINE BD_DynamicSolutionGA2( x, OtherState, p, m, ErrStat, ErrMsg)
       ENDIF
 
          ! Reshape 2d array into 1d for the use with the LAPACK solver
-      m%LP_RHS       =  RESHAPE(m%RHS(:,:), (/p%dof_total/))
+      m%LP_RHS       =  RESHAPE(m%RHS, (/p%dof_total/))
       m%LP_RHS_LU    =  m%LP_RHS(7:p%dof_total)
 
          ! Solve for X in A*X=B to get the accelerations of blade
@@ -4711,7 +4711,7 @@ SUBROUTINE BD_DynamicSolutionGA2( x, OtherState, p, m, ErrStat, ErrMsg)
       CALL BD_UpdateDynamicGA2(p,m,x,OtherState)
 
       ! Compute energy of the current system (note - not a norm!)
-      m%LP_RHS = RESHAPE(x%q(:,:), (/p%dof_total/))
+      m%LP_RHS = RESHAPE(x%q, (/p%dof_total/))
       Enorm    = abs(DOT_PRODUCT(m%LP_RHS_LU, m%LP_RHS(7:p%dof_total)))
 
       ! Check if solution has converged.
@@ -5306,7 +5306,7 @@ SUBROUTINE BD_CalcIC_Velocity( u, p, x)
 
 
    !Initialize velocities and angular velocities
-   x%dqdt(:,:) = 0.0_BDKi
+   x%dqdt = 0.0_BDKi
 
    ! these values don't change in the loop:
    k=1 !when i=1, k=1
@@ -5648,11 +5648,11 @@ SUBROUTINE BD_ComputeBladeMassNew( p, ErrStat, ErrMsg )
        call Cleanup()
        return
    end if
-   NQPpos(:,:)  = 0.0_BDKi
-   EMass0_GL(:,:,:)  = 0.0_BDKi
-   elem_mass= 0.0_BDKi
-   elem_CG(:)= 0.0_BDKi
-   elem_IN(:,:)= 0.0_BDKi
+   NQPpos = 0.0_BDKi
+   EMass0_GL = 0.0_BDKi
+   elem_mass = 0.0_BDKi
+   elem_CG = 0.0_BDKi
+   elem_IN = 0.0_BDKi
 
    DO nelem=1,p%elem_total
 
@@ -5664,14 +5664,14 @@ SUBROUTINE BD_ComputeBladeMassNew( p, ErrStat, ErrMsg )
 
        CALL BD_ComputeElementMass(nelem,p,NQPpos,EMass0_GL,elem_mass,elem_CG,elem_IN)
 
-       p%blade_mass     = p%blade_mass    + elem_mass
-       p%blade_CG(:)    = p%blade_CG(:)   + elem_CG(:)
-       p%blade_IN(:,:)  = p%blade_IN(:,:) + elem_IN(:,:)
+       p%blade_mass = p%blade_mass + elem_mass
+       p%blade_CG = p%blade_CG + elem_CG
+       p%blade_IN = p%blade_IN + elem_IN
 
    ENDDO
 
    if (.not. EqualRealNos( p%blade_mass, 0.0_BDKi )) then
-      p%blade_CG(:) = p%blade_CG(:) / p%blade_mass
+      p%blade_CG = p%blade_CG / p%blade_mass
    else
       p%blade_CG = 0.0_BDKi
    end if
@@ -5705,8 +5705,8 @@ SUBROUTINE BD_ComputeElementMass(nelem,p,NQPpos,EMass0_GL,elem_mass,elem_CG,elem
    CHARACTER(*), PARAMETER     :: RoutineName = 'BD_ComputeElementMass'
 
    elem_mass  = 0.0_BDKi
-   elem_CG(:) = 0.0_BDKi
-   elem_IN(:,:) = 0.0_BDKi
+   elem_CG = 0.0_BDKi
+   elem_IN = 0.0_BDKi
 
 
    DO idx_qp=1,p%nqp

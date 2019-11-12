@@ -523,7 +523,7 @@ SUBROUTINE DistrMGLoads(MGdens, g, R, tMG, F_MG )
    REAL(ReKi),         INTENT ( IN    )  :: tMG
    REAL(ReKi),         INTENT (   OUT )  :: F_MG(6)
    
-   F_MG(:) = 0.0
+   F_MG = 0.0
    F_MG(3) = -MGdens*g*Pi* ( (R + tMG ) * ( R + tMG ) - R*R )
    
 END SUBROUTINE DistrMGLoads
@@ -4564,24 +4564,24 @@ SUBROUTINE Morison_CalcOutput( Time, u, p, x, xd, z, OtherState, y, m, ErrStat, 
             ! NOTE: This will find the closest WaveTime index (wvIndx) which is has waveTime(wvIndx) > = Time.  If WaveDT = DT then waveTime(wvIndx) will equal Time
             ! For WaveMod = 6 or WaveMod = 5 WaveDT must equal DT for the returned value of elementWaterState to be meaningful, for other WaveMod, 
             ! elementWaterState is the same for all time for a given node, J.
-        elementWaterState = REAL( InterpWrappedStpInt( REAL(Time, SiKi), p%WaveTime(:), p%elementWaterState(:,J), m%LastIndWave, p%NStepWave + 1 ), ReKi )
+        elementWaterState = REAL( InterpWrappedStpInt( REAL(Time, SiKi), p%WaveTime, p%elementWaterState(:,J), m%LastIndWave, p%NStepWave + 1 ), ReKi )
        
          
          ! Determine the dynamic pressure at the marker
-         m%D_FDynP(J) = InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime(:), p%WaveDynP(:,nodeIndx), &
+         m%D_FDynP(J) = InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime, p%WaveDynP(:,nodeIndx), &
                                     m%LastIndWave, p%NStepWave + 1 )
          
             
          DO I=1,3
                ! Determine the fluid acceleration and velocity at the marker
-            m%D_FA(I,J) = InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime(:), p%WaveAcc(:,nodeIndx,I), &
+            m%D_FA(I,J) = InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime, p%WaveAcc(:,nodeIndx,I), &
                                     m%LastIndWave, p%NStepWave + 1       )
-            m%D_FV(I,J) = InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime(:), p%WaveVel(:,nodeIndx,I), &
+            m%D_FV(I,J) = InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime, p%WaveVel(:,nodeIndx,I), &
                                     m%LastIndWave, p%NStepWave + 1       )
             
             vrel(I) =  m%D_FV(I,J) - u%DistribMesh%TranslationVel(I,J)
             
-            m%D_F_I(I,J) = elementWaterState * InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime(:), p%D_F_I(:,I,J), &
+            m%D_F_I(I,J) = elementWaterState * InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime, p%D_F_I(:,I,J), &
                                     m%LastIndWave, p%NStepWave + 1       )
          END DO
          
@@ -4627,18 +4627,18 @@ SUBROUTINE Morison_CalcOutput( Time, u, p, x, xd, z, OtherState, y, m, ErrStat, 
             ! Obtain the node index because WaveVel, WaveAcc, and WaveDynP are defined in the node indexing scheme, not the markers
 
          nodeIndx = p%lumpedToNodeIndx(J)
-         nodeInWater = REAL( InterpWrappedStpInt( REAL(Time, SiKi), p%WaveTime(:), p%nodeInWater(:,nodeIndx), m%LastIndWave, p%NStepWave + 1 ), ReKi )
+         nodeInWater = REAL( InterpWrappedStpInt( REAL(Time, SiKi), p%WaveTime, p%nodeInWater(:,nodeIndx), m%LastIndWave, p%NStepWave + 1 ), ReKi )
             ! Determine the dynamic pressure at the marker
-         m%L_FDynP(J) = InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime(:), p%WaveDynP(:,nodeIndx), &
+         m%L_FDynP(J) = InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime, p%WaveDynP(:,nodeIndx), &
                                     m%LastIndWave, p%NStepWave + 1       )
          
          
          DO I=1,3
                ! Determine the fluid acceleration and velocity at the marker
-            m%L_FA(I,J) = InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime(:), p%WaveAcc(:,nodeIndx,I), &
+            m%L_FA(I,J) = InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime, p%WaveAcc(:,nodeIndx,I), &
                                     m%LastIndWave, p%NStepWave + 1       )
                
-            m%L_FV(I,J) = InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime(:), p%WaveVel(:,nodeIndx,I), &
+            m%L_FV(I,J) = InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime, p%WaveVel(:,nodeIndx,I), &
                                     m%LastIndWave, p%NStepWave + 1       )
             vrel(I)     = m%L_FV(I,J) - u%LumpedMesh%TranslationVel(I,J)
          END DO
@@ -4665,7 +4665,7 @@ SUBROUTINE Morison_CalcOutput( Time, u, p, x, xd, z, OtherState, y, m, ErrStat, 
          DO I=1,6
                         
             ! We are now combining the dynamic pressure term into the inertia term
-            m%L_F_I(I,J) = InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime(:), p%L_F_I(:,I,J), &
+            m%L_F_I(I,J) = InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime, p%L_F_I(:,I,J), &
                                     m%LastIndWave, p%NStepWave + 1       ) 
             
             IF (I < 4 ) THEN

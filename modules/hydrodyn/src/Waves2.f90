@@ -612,7 +612,7 @@ SUBROUTINE Waves2_Init( InitInp, u, p, x, xd, z, OtherState, y, misc, Interval, 
                CALL CleanUp()
                RETURN
             END IF
-            p%WaveElev2(:,I) = TmpTimeSeries(:)
+            p%WaveElev2(:,I) = TmpTimeSeries
          ENDDO    ! Wave elevation points requested
 
 
@@ -626,7 +626,7 @@ SUBROUTINE Waves2_Init( InitInp, u, p, x, xd, z, OtherState, y, misc, Interval, 
                   CALL CleanUp()
                   RETURN
                END IF
-               InitOut%WaveElevSeries2(:,I) = TmpTimeSeries(:)
+               InitOut%WaveElevSeries2(:,I) = TmpTimeSeries
             ENDDO
          ENDIF
 
@@ -765,21 +765,21 @@ SUBROUTINE Waves2_Init( InitInp, u, p, x, xd, z, OtherState, y, misc, Interval, 
 
                !> ### Apply the inverse FFT to each of the components to get the time domain result ###
                !> *   \f$ V(t) = 2 \operatorname{IFFT}\left[H^-\right] \f$
-            CALL ApplyFFT_cx(  WaveVel2xDiff(:),  WaveVel2xCDiff(:), FFT_Data, ErrStatTmp )
+            CALL ApplyFFT_cx(  WaveVel2xDiff,  WaveVel2xCDiff, FFT_Data, ErrStatTmp )
                CALL SetErrStat(ErrStatTmp,'Error occured while applying the FFT on V_x.',ErrStat,ErrMsg,'Waves2_Init')
-            CALL ApplyFFT_cx(  WaveVel2yDiff(:),  WaveVel2yCDiff(:), FFT_Data, ErrStatTmp )
+            CALL ApplyFFT_cx(  WaveVel2yDiff,  WaveVel2yCDiff, FFT_Data, ErrStatTmp )
                CALL SetErrStat(ErrStatTmp,'Error occured while applying the FFT on V_y.',ErrStat,ErrMsg,'Waves2_Init')
-            CALL ApplyFFT_cx(  WaveVel2zDiff(:),  WaveVel2zCDiff(:), FFT_Data, ErrStatTmp )
+            CALL ApplyFFT_cx(  WaveVel2zDiff,  WaveVel2zCDiff, FFT_Data, ErrStatTmp )
                CALL SetErrStat(ErrStatTmp,'Error occured while applying the FFT on V_z.',ErrStat,ErrMsg,'Waves2_Init')
 
-            CALL ApplyFFT_cx(  WaveAcc2xDiff(:),  WaveAcc2xCDiff(:), FFT_Data, ErrStatTmp )
+            CALL ApplyFFT_cx(  WaveAcc2xDiff,  WaveAcc2xCDiff, FFT_Data, ErrStatTmp )
                CALL SetErrStat(ErrStatTmp,'Error occured while applying the FFT on Acc_x.',ErrStat,ErrMsg,'Waves2_Init')
-            CALL ApplyFFT_cx(  WaveAcc2yDiff(:),  WaveAcc2yCDiff(:), FFT_Data, ErrStatTmp )
+            CALL ApplyFFT_cx(  WaveAcc2yDiff,  WaveAcc2yCDiff, FFT_Data, ErrStatTmp )
                CALL SetErrStat(ErrStatTmp,'Error occured while applying the FFT on Acc_y.',ErrStat,ErrMsg,'Waves2_Init')
-            CALL ApplyFFT_cx(  WaveAcc2zDiff(:),  WaveAcc2zCDiff(:), FFT_Data, ErrStatTmp )
+            CALL ApplyFFT_cx(  WaveAcc2zDiff,  WaveAcc2zCDiff, FFT_Data, ErrStatTmp )
                CALL SetErrStat(ErrStatTmp,'Error occured while applying the FFT on Acc_z.',ErrStat,ErrMsg,'Waves2_Init')
 
-            CALL ApplyFFT_cx(  WaveDynP2Diff(:),  WaveDynP2CDiff(:), FFT_Data, ErrStatTmp )
+            CALL ApplyFFT_cx(  WaveDynP2Diff,  WaveDynP2CDiff, FFT_Data, ErrStatTmp )
                CALL SetErrStat(ErrStatTmp,'Error occured while applying the FFT on DynP2.',ErrStat,ErrMsg,'Waves2_Init')
 
 
@@ -791,15 +791,15 @@ SUBROUTINE Waves2_Init( InitInp, u, p, x, xd, z, OtherState, y, misc, Interval, 
 
 
                ! Copy the results to the output
-            InitOut%WaveVel2D(:,WaveKinPrimeMap(I),1) =  2.0_SiKi * WaveVel2xDiff(:)     ! x-component of velocity
-            InitOut%WaveVel2D(:,WaveKinPrimeMap(I),2) =  2.0_SiKi * WaveVel2yDiff(:)     ! y-component of velocity
-            InitOut%WaveVel2D(:,WaveKinPrimeMap(I),3) =  2.0_SiKi * WaveVel2zDiff(:)     ! z-component of velocity
+            InitOut%WaveVel2D(:,WaveKinPrimeMap(I),1) =  2.0_SiKi * WaveVel2xDiff     ! x-component of velocity
+            InitOut%WaveVel2D(:,WaveKinPrimeMap(I),2) =  2.0_SiKi * WaveVel2yDiff     ! y-component of velocity
+            InitOut%WaveVel2D(:,WaveKinPrimeMap(I),3) =  2.0_SiKi * WaveVel2zDiff     ! z-component of velocity
 
-            InitOut%WaveAcc2D(:,WaveKinPrimeMap(I),1) =  2.0_SiKi * WaveAcc2xDiff(:)     ! x-component of acceleration
-            InitOut%WaveAcc2D(:,WaveKinPrimeMap(I),2) =  2.0_SiKi * WaveAcc2yDiff(:)     ! y-component of acceleration
-            InitOut%WaveAcc2D(:,WaveKinPrimeMap(I),3) =  2.0_SiKi * WaveAcc2zDiff(:)     ! z-component of acceleration
+            InitOut%WaveAcc2D(:,WaveKinPrimeMap(I),1) =  2.0_SiKi * WaveAcc2xDiff     ! x-component of acceleration
+            InitOut%WaveAcc2D(:,WaveKinPrimeMap(I),2) =  2.0_SiKi * WaveAcc2yDiff     ! y-component of acceleration
+            InitOut%WaveAcc2D(:,WaveKinPrimeMap(I),3) =  2.0_SiKi * WaveAcc2zDiff     ! z-component of acceleration
 
-            InitOut%WaveDynP2D(:,WaveKinPrimeMap(I))  =  2.0_SiKi * WaveDynP2Diff(:)     ! Dynamic pressure
+            InitOut%WaveDynP2D(:,WaveKinPrimeMap(I))  =  2.0_SiKi * WaveDynP2Diff     ! Dynamic pressure
 
 
                ! Copy the first point to the last to make it easier.
@@ -984,7 +984,7 @@ SUBROUTINE Waves2_Init( InitInp, u, p, x, xd, z, OtherState, y, misc, Interval, 
                RETURN
             END IF
                ! Add to the series since the difference is already included
-            p%WaveElev2(:,I) = p%WaveElev2(:,I) + TmpTimeSeries(:)
+            p%WaveElev2(:,I) = p%WaveElev2(:,I) + TmpTimeSeries
          ENDDO    ! Wave elevation points requested
 
 
@@ -999,7 +999,7 @@ SUBROUTINE Waves2_Init( InitInp, u, p, x, xd, z, OtherState, y, misc, Interval, 
                   RETURN
                END IF
                   ! Add to the series since the difference is already included
-               InitOut%WaveElevSeries2(:,I) = InitOut%WaveElevSeries2(:,I) + TmpTimeSeries(:)
+               InitOut%WaveElevSeries2(:,I) = InitOut%WaveElevSeries2(:,I) + TmpTimeSeries
             ENDDO
          ENDIF
 
@@ -1261,38 +1261,38 @@ SUBROUTINE Waves2_Init( InitInp, u, p, x, xd, z, OtherState, y, misc, Interval, 
                !> ### Apply the inverse FFT to the first and second terms of each of the components to get the time domain result ###
                !> *   \f$ V^{(2)+}(t)  =  \operatorname{IFFT}\left[K^+\right]
                !!                      + 2\operatorname{IFFT}\left[H^+\right]     \f$
-            CALL ApplyFFT_cx(  WaveVel2xSumT1(:),  WaveVel2xCSumT1(:), FFT_Data, ErrStatTmp )
+            CALL ApplyFFT_cx(  WaveVel2xSumT1,  WaveVel2xCSumT1, FFT_Data, ErrStatTmp )
                CALL SetErrStat(ErrStatTmp,'Error occured while applying the FFT on V_x.',ErrStat,ErrMsg,'Waves2_Init')
-            CALL ApplyFFT_cx(  WaveVel2ySumT1(:),  WaveVel2yCSumT1(:), FFT_Data, ErrStatTmp )
+            CALL ApplyFFT_cx(  WaveVel2ySumT1,  WaveVel2yCSumT1, FFT_Data, ErrStatTmp )
                CALL SetErrStat(ErrStatTmp,'Error occured while applying the FFT on V_y.',ErrStat,ErrMsg,'Waves2_Init')
-            CALL ApplyFFT_cx(  WaveVel2zSumT1(:),  WaveVel2zCSumT1(:), FFT_Data, ErrStatTmp )
+            CALL ApplyFFT_cx(  WaveVel2zSumT1,  WaveVel2zCSumT1, FFT_Data, ErrStatTmp )
                CALL SetErrStat(ErrStatTmp,'Error occured while applying the FFT on V_z.',ErrStat,ErrMsg,'Waves2_Init')
 
-            CALL ApplyFFT_cx(  WaveAcc2xSumT1(:),  WaveAcc2xCSumT1(:), FFT_Data, ErrStatTmp )
+            CALL ApplyFFT_cx(  WaveAcc2xSumT1,  WaveAcc2xCSumT1, FFT_Data, ErrStatTmp )
                CALL SetErrStat(ErrStatTmp,'Error occured while applying the FFT on Acc_x.',ErrStat,ErrMsg,'Waves2_Init')
-            CALL ApplyFFT_cx(  WaveAcc2ySumT1(:),  WaveAcc2yCSumT1(:), FFT_Data, ErrStatTmp )
+            CALL ApplyFFT_cx(  WaveAcc2ySumT1,  WaveAcc2yCSumT1, FFT_Data, ErrStatTmp )
                CALL SetErrStat(ErrStatTmp,'Error occured while applying the FFT on Acc_y.',ErrStat,ErrMsg,'Waves2_Init')
-            CALL ApplyFFT_cx(  WaveAcc2zSumT1(:),  WaveAcc2zCSumT1(:), FFT_Data, ErrStatTmp )
+            CALL ApplyFFT_cx(  WaveAcc2zSumT1,  WaveAcc2zCSumT1, FFT_Data, ErrStatTmp )
                CALL SetErrStat(ErrStatTmp,'Error occured while applying the FFT on Acc_z.',ErrStat,ErrMsg,'Waves2_Init')
 
-            CALL ApplyFFT_cx(  WaveDynP2SumT1(:),  WaveDynP2CSumT1(:), FFT_Data, ErrStatTmp )
+            CALL ApplyFFT_cx(  WaveDynP2SumT1,  WaveDynP2CSumT1, FFT_Data, ErrStatTmp )
                CALL SetErrStat(ErrStatTmp,'Error occured while applying the FFT on DynP2.',ErrStat,ErrMsg,'Waves2_Init')
 
-            CALL ApplyFFT_cx(  WaveVel2xSumT2(:),  WaveVel2xCSumT2(:), FFT_Data, ErrStatTmp )
+            CALL ApplyFFT_cx(  WaveVel2xSumT2,  WaveVel2xCSumT2, FFT_Data, ErrStatTmp )
                CALL SetErrStat(ErrStatTmp,'Error occured while applying the FFT on V_x.',ErrStat,ErrMsg,'Waves2_Init')
-            CALL ApplyFFT_cx(  WaveVel2ySumT2(:),  WaveVel2yCSumT2(:), FFT_Data, ErrStatTmp )
+            CALL ApplyFFT_cx(  WaveVel2ySumT2,  WaveVel2yCSumT2, FFT_Data, ErrStatTmp )
                CALL SetErrStat(ErrStatTmp,'Error occured while applying the FFT on V_y.',ErrStat,ErrMsg,'Waves2_Init')
-            CALL ApplyFFT_cx(  WaveVel2zSumT2(:),  WaveVel2zCSumT2(:), FFT_Data, ErrStatTmp )
+            CALL ApplyFFT_cx(  WaveVel2zSumT2,  WaveVel2zCSumT2, FFT_Data, ErrStatTmp )
                CALL SetErrStat(ErrStatTmp,'Error occured while applying the FFT on V_z.',ErrStat,ErrMsg,'Waves2_Init')
 
-            CALL ApplyFFT_cx(  WaveAcc2xSumT2(:),  WaveAcc2xCSumT2(:), FFT_Data, ErrStatTmp )
+            CALL ApplyFFT_cx(  WaveAcc2xSumT2,  WaveAcc2xCSumT2, FFT_Data, ErrStatTmp )
                CALL SetErrStat(ErrStatTmp,'Error occured while applying the FFT on Acc_x.',ErrStat,ErrMsg,'Waves2_Init')
-            CALL ApplyFFT_cx(  WaveAcc2ySumT2(:),  WaveAcc2yCSumT2(:), FFT_Data, ErrStatTmp )
+            CALL ApplyFFT_cx(  WaveAcc2ySumT2,  WaveAcc2yCSumT2, FFT_Data, ErrStatTmp )
                CALL SetErrStat(ErrStatTmp,'Error occured while applying the FFT on Acc_y.',ErrStat,ErrMsg,'Waves2_Init')
-            CALL ApplyFFT_cx(  WaveAcc2zSumT2(:),  WaveAcc2zCSumT2(:), FFT_Data, ErrStatTmp )
+            CALL ApplyFFT_cx(  WaveAcc2zSumT2,  WaveAcc2zCSumT2, FFT_Data, ErrStatTmp )
                CALL SetErrStat(ErrStatTmp,'Error occured while applying the FFT on Acc_z.',ErrStat,ErrMsg,'Waves2_Init')
 
-            CALL ApplyFFT_cx(  WaveDynP2SumT2(:),  WaveDynP2CSumT2(:), FFT_Data, ErrStatTmp )
+            CALL ApplyFFT_cx(  WaveDynP2SumT2,  WaveDynP2CSumT2, FFT_Data, ErrStatTmp )
                CALL SetErrStat(ErrStatTmp,'Error occured while applying the FFT on DynP2.',ErrStat,ErrMsg,'Waves2_Init')
 
             IF ( ErrStat >= AbortErrLev ) THEN
@@ -1302,15 +1302,15 @@ SUBROUTINE Waves2_Init( InitInp, u, p, x, xd, z, OtherState, y, misc, Interval, 
 
 
                ! Add the results to the output
-            InitOut%WaveVel2S(:,WaveKinPrimeMap(I),1) =  WaveVel2xSumT1(:) +  2.0_SiKi * WaveVel2xSumT2(:)     ! x-component of velocity
-            InitOut%WaveVel2S(:,WaveKinPrimeMap(I),2) =  WaveVel2ySumT1(:) +  2.0_SiKi * WaveVel2ySumT2(:)     ! y-component of velocity
-            InitOut%WaveVel2S(:,WaveKinPrimeMap(I),3) =  WaveVel2zSumT1(:) +  2.0_SiKi * WaveVel2zSumT2(:)     ! z-component of velocity
+            InitOut%WaveVel2S(:,WaveKinPrimeMap(I),1) =  WaveVel2xSumT1 +  2.0_SiKi * WaveVel2xSumT2     ! x-component of velocity
+            InitOut%WaveVel2S(:,WaveKinPrimeMap(I),2) =  WaveVel2ySumT1 +  2.0_SiKi * WaveVel2ySumT2     ! y-component of velocity
+            InitOut%WaveVel2S(:,WaveKinPrimeMap(I),3) =  WaveVel2zSumT1 +  2.0_SiKi * WaveVel2zSumT2     ! z-component of velocity
 
-            InitOut%WaveAcc2S(:,WaveKinPrimeMap(I),1) =  WaveAcc2xSumT1(:) +  2.0_SiKi * WaveAcc2xSumT2(:)     ! x-component of acceleration
-            InitOut%WaveAcc2S(:,WaveKinPrimeMap(I),2) =  WaveAcc2ySumT1(:) +  2.0_SiKi * WaveAcc2ySumT2(:)     ! y-component of acceleration
-            InitOut%WaveAcc2S(:,WaveKinPrimeMap(I),3) =  WaveAcc2zSumT1(:) +  2.0_SiKi * WaveAcc2zSumT2(:)     ! z-component of acceleration
+            InitOut%WaveAcc2S(:,WaveKinPrimeMap(I),1) =  WaveAcc2xSumT1 +  2.0_SiKi * WaveAcc2xSumT2     ! x-component of acceleration
+            InitOut%WaveAcc2S(:,WaveKinPrimeMap(I),2) =  WaveAcc2ySumT1 +  2.0_SiKi * WaveAcc2ySumT2     ! y-component of acceleration
+            InitOut%WaveAcc2S(:,WaveKinPrimeMap(I),3) =  WaveAcc2zSumT1 +  2.0_SiKi * WaveAcc2zSumT2     ! z-component of acceleration
 
-            InitOut%WaveDynP2S(:,WaveKinPrimeMap(I))  =  WaveDynP2SumT1(:) +  2.0_SiKi * WaveDynP2SumT2(:)     ! Dynamic pressure
+            InitOut%WaveDynP2S(:,WaveKinPrimeMap(I))  =  WaveDynP2SumT1 +  2.0_SiKi * WaveDynP2SumT2     ! Dynamic pressure
 
 
                ! Copy the first point to the last to make it easier.
@@ -1517,7 +1517,7 @@ SUBROUTINE Waves2_Init( InitInp, u, p, x, xd, z, OtherState, y, misc, Interval, 
 
             !> ### Apply the inverse FFT to each of the components to get the time domain result ###
             !> *   \f$ \eta(t) = \operatorname{IFFT}\left[2 H^-\right] \f$
-         CALL ApplyFFT_cx( WaveElevSeriesAtXY(:), TmpFreqSeries(:), FFT_Data, ErrStatLcl2 )
+         CALL ApplyFFT_cx( WaveElevSeriesAtXY, TmpFreqSeries, FFT_Data, ErrStatLcl2 )
          CALL SetErrStat(ErrStatLcl2,'Error occured while applying the FFT on WaveElevSeriesAtXY.',ErrStatLcl,ErrMsgLcl,'WaveElevSeriesAtXY_Diff')
  
             ! Append first datapoint as the last as aid for repeated wave data
@@ -1704,9 +1704,9 @@ SUBROUTINE Waves2_Init( InitInp, u, p, x, xd, z, OtherState, y, misc, Interval, 
             !> ## Apply the inverse FFT to the first and second terms to get the time domain result ##
             !> *   \f$ \eta^{(2)+}(t)  =  \operatorname{IFFT}\left[K^+\right]
             !!                         + 2\operatorname{IFFT}\left[H^+\right]     \f$
-         CALL ApplyFFT_cx( WaveElevSeriesAtXY(:),  TmpFreqSeries(:), FFT_Data, ErrStatLcl2 )
+         CALL ApplyFFT_cx( WaveElevSeriesAtXY,  TmpFreqSeries, FFT_Data, ErrStatLcl2 )
          CALL SetErrStat(ErrStatLcl2,'Error occured while applying the FFT on WaveElevSeriesAtXY.',ErrStatLcl,ErrMsgLcl,'WaveElevSeriesAtXY_Sum')
-         CALL ApplyFFT_cx( TmpTimeSeries2(:),      TmpFreqSeries2(:), FFT_Data, ErrStatLcl2 )
+         CALL ApplyFFT_cx( TmpTimeSeries2,      TmpFreqSeries2, FFT_Data, ErrStatLcl2 )
          CALL SetErrStat(ErrStatLcl2,'Error occured while applying the FFT on WaveElevSeriesAtXY.',ErrStatLcl,ErrMsgLcl,'WaveElevSeriesAtXY_Sum')
 
             ! Add the two terms together
@@ -2294,7 +2294,7 @@ SUBROUTINE Waves2_CalcOutput( Time, u, p, x, xd, z, OtherState, y, m, ErrStat, E
 
 
       DO I=1,p%NWaveElev
-         WaveElev2Temp(I)  = InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime(:), p%WaveElev2(:,I), &
+         WaveElev2Temp(I)  = InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime, p%WaveElev2(:,I), &
                                                      m%LastIndWave, p%NStepWave + 1       )
       ENDDO
 

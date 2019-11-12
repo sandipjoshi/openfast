@@ -247,7 +247,7 @@ RdtnFrmAM = .FALSE.
             DO J = 1,6        ! Loop through all rows    of RdtnKrnl
                DO K = J,6     ! Loop through all columns of RdtnKrnl above and including the diagonal
                   Indx = Indx + 1
-                  p%RdtnKrnl(I,J,K) = Krnl_Fact*Omega*( InterpStp( Omega, InitInp%HdroFreq(:), &
+                  p%RdtnKrnl(I,J,K) = Krnl_Fact*Omega*( InterpStp( Omega, InitInp%HdroFreq, &
                                                                                 InitInp%HdroAddMs(:       ,Indx), LastInd, InitInp%NInpFreq ) &
                                                       -                         InitInp%HdroAddMs(InitInp%NInpFreq,Indx)                      )
                END DO          ! K - All columns of RdtnKrnl above and including the diagonal
@@ -324,7 +324,7 @@ RdtnFrmAM = .FALSE.
             DO J = 1,6        ! Loop through all rows    of RdtnKrnl
                DO K = J,6     ! Loop through all columns of RdtnKrnl above and including the diagonal
                   Indx = Indx + 1
-                  p%RdtnKrnl(I,J,K) = Krnl_Fact*InterpStp ( Omega, InitInp%HdroFreq(:), InitInp%HdroDmpng(:,Indx), LastInd, InitInp%NInpFreq )
+                  p%RdtnKrnl(I,J,K) = Krnl_Fact*InterpStp ( Omega, InitInp%HdroFreq, InitInp%HdroDmpng(:,Indx), LastInd, InitInp%NInpFreq )
                END DO          ! K - All columns of RdtnKrnl above and including the diagonal
             END DO             ! J - All rows    of RdtnKrnl
 

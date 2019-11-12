@@ -587,7 +587,7 @@ CONTAINS
 
       ! Determine the coefficients of the polynomials.
 
-   Coef(:,0) = YAry(:)
+   Coef(:,0) = YAry
 
    ZHi = 0.0_ReKi
 
@@ -758,14 +758,14 @@ CONTAINS
 
    Coef(:,:,0) = YAry(1:NumPts-1,:)
 
-   ZHi(:) = 0.0_ReKi
+   ZHi = 0.0_ReKi
 
    DO I=NumPts-1,1,-1
-      ZLo(:)      = ( V(I,:) - DelX(I)*ZHi(:) )/U(I)                             ! bjj: already checked for u(I) == 0
-      Coef(I,:,1) = Slope(I,:) - DelX(I)*( ZHi(:)/6.0_ReKi + ZLo(:)/3.0_ReKi )
-      Coef(I,:,2) = 0.5_ReKi*ZLo(:)
-      Coef(I,:,3) = ( ZHi(:) - ZLo(:) )/( 6.0_ReKi*DelX(I) )                     ! bjj: already checked for DelX(I) == 0
-      ZHi(:)      = ZLo(:)
+      ZLo         = ( V(I,:) - DelX(I)*ZHi )/U(I)                             ! bjj: already checked for u(I) == 0
+      Coef(I,:,1) = Slope(I,:) - DelX(I)*( ZHi/6.0_ReKi + ZLo/3.0_ReKi )
+      Coef(I,:,2) = 0.5_ReKi*ZLo
+      Coef(I,:,3) = ( ZHi - ZLo )/( 6.0_ReKi*DelX(I) )                     ! bjj: already checked for DelX(I) == 0
+      ZHi         = ZLo
    END DO ! I
    
    CALL ExitThisRoutine ( ErrID_None, 'No Problemo' )
@@ -978,10 +978,10 @@ CONTAINS
       ! See if X is within the range of XAry.  Return the end point if it is not.
 
    IF ( X <= XAry(1) )  THEN
-      Res(:) = YAry(1,:)
+      Res = YAry(1,:)
       RETURN
    ELSEIF ( X >= XAry(NumPts) )  THEN
-      Res(:) = YAry(NumPts,:)
+      Res = YAry(NumPts,:)
       RETURN
    ENDIF ! ( X <= XAry(1) )
 
@@ -992,7 +992,7 @@ CONTAINS
 
    XOff = X - XAry(ILo)
 
-   Res(:) = Coef(ILo,:,0) + XOff*( Coef(ILo,:,1) + XOff*( Coef(ILo,:,2) + XOff*Coef(ILo,:,3) ) )
+   Res = Coef(ILo,:,0) + XOff*( Coef(ILo,:,1) + XOff*( Coef(ILo,:,2) + XOff*Coef(ILo,:,3) ) )
 
    RETURN
 
@@ -4405,7 +4405,7 @@ end function Rad2M180to180Deg
 
 
 
-    DividesN1(:) = .FALSE.                              ! We need to check all of the primes the first time through
+    DividesN1 = .FALSE.                              ! We need to check all of the primes the first time through
     
     sign = 1
     IF ( PRESENT( subtract ) ) THEN
@@ -4873,14 +4873,14 @@ end function Rad2M180to180Deg
 
    Coef(:,:,0) = YAry(1:NumPts-1,:)
 
-   ZHi(:) = 0.0_ReKi
+   ZHi = 0.0_ReKi
 
    DO I=NumPts-1,1,-1
-      ZLo(:)      = ( V(I,:) - DelX*ZHi(:) )/U(I)
-      Coef(I,:,1) = Slope(I,:) - DelX*( ZHi(:)/6.0_ReKi + ZLo(:)/3.0_ReKi )
-      Coef(I,:,2) = 0.5_ReKi*ZLo(:)
-      Coef(I,:,3) = ( ZHi(:) - ZLo(:) )/DelX6
-      ZHi(:)      = ZLo(:)
+      ZLo         = ( V(I,:) - DelX*ZHi )/U(I)
+      Coef(I,:,1) = Slope(I,:) - DelX*( ZHi/6.0_ReKi + ZLo/3.0_ReKi )
+      Coef(I,:,2) = 0.5_ReKi*ZLo
+      Coef(I,:,3) = ( ZHi - ZLo )/DelX6
+      ZHi         = ZLo
    END DO ! I
 
 
@@ -5040,10 +5040,10 @@ end function Rad2M180to180Deg
       ! See if X is within the range of XAry.  Return the end point if it is not.
 
    IF ( X <= XAry(1) )  THEN
-      Res(:) = YAry(1,:)
+      Res = YAry(1,:)
       RETURN
    ELSEIF ( X >= XAry(NumPts) )  THEN
-      Res(:) = YAry(NumPts,:)
+      Res = YAry(NumPts,:)
       RETURN
    ENDIF ! ( X <= XAry(1) )
 
@@ -5054,7 +5054,7 @@ end function Rad2M180to180Deg
 
    XOff = X - XAry(ILo)
 
-   Res(:) = Coef(ILo,:,0) + XOff*( Coef(ILo,:,1) + XOff*( Coef(ILo,:,2) + XOff*Coef(ILo,:,3) ) )
+   Res = Coef(ILo,:,0) + XOff*( Coef(ILo,:,1) + XOff*( Coef(ILo,:,2) + XOff*Coef(ILo,:,3) ) )
 
 
    RETURN
