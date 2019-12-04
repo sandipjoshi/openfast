@@ -199,6 +199,8 @@ macro(set_fast_intel_fortran_posix)
   # set(CMAKE_Fortran_FLAGS_RELWITHDEBINFO "${CMAKE_Fortran_FLAGS_RELWITHDEBINFO} -prof-use -prof-dir /Users/rmudafor/Development/intel_vectorization/openfast_performance/build")
 
   set(CMAKE_Fortran_FLAGS_RELWITHDEBINFO "${CMAKE_Fortran_FLAGS_RELWITHDEBINFO} -align array64byte,records")
+  set(CMAKE_Fortran_FLAGS_RELWITHDEBINFO "${CMAKE_Fortran_FLAGS_RELWITHDEBINFO} -align all")
+  set(CMAKE_Fortran_FLAGS_RELWITHDEBINFO "${CMAKE_Fortran_FLAGS_RELWITHDEBINFO} -qopenmp-simd")
   # array64byte: "automatically" align arrays of 64 byte
   # records: Affects alignment of derived-type components and fields of record structures
   # set(CMAKE_Fortran_FLAGS_RELWITHDEBINFO "${CMAKE_Fortran_FLAGS_RELWITHDEBINFO} -vec-threshold0")    # vectorize all loops regardless of computed performance improvement
