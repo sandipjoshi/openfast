@@ -4564,33 +4564,26 @@ SUBROUTINE Morison_CalcOutput( Time, u, p, x, xd, z, OtherState, y, m, ErrStat, 
             ! NOTE: This will find the closest WaveTime index (wvIndx) which is has waveTime(wvIndx) > = Time.  If WaveDT = DT then waveTime(wvIndx) will equal Time
             ! For WaveMod = 6 or WaveMod = 5 WaveDT must equal DT for the returned value of elementWaterState to be meaningful, for other WaveMod, 
             ! elementWaterState is the same for all time for a given node, J.
-        elementWaterState = REAL( InterpWrappedStpInt( REAL(Time, SiKi), p%WaveTime, p%elementWaterState(:,J), m%LastIndWave, p%NStepWave + 1 ), ReKi )
+         elementWaterState = REAL( InterpWrappedStpInt( REAL(Time, SiKi), p%WaveTime, p%elementWaterState(:,J), m%LastIndWave, p%NStepWave + 1 ), ReKi )
        
-         
-         ! Determine the dynamic pressure at the marker
-         m%D_FDynP(J) = InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime, p%WaveDynP(:,nodeIndx), &
-                                    m%LastIndWave, p%NStepWave + 1 )
-         
-            
+            ! Determine the dynamic pressure at the marker
+         m%D_FDynP(J) = InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime, p%WaveDynP(:,nodeIndx), m%LastIndWave, p%NStepWave + 1 )
+
          DO I=1,3
                ! Determine the fluid acceleration and velocity at the marker
-            m%D_FA(I,J) = InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime, p%WaveAcc(:,nodeIndx,I), &
-                                    m%LastIndWave, p%NStepWave + 1       )
-            m%D_FV(I,J) = InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime, p%WaveVel(:,nodeIndx,I), &
-                                    m%LastIndWave, p%NStepWave + 1       )
-            
+            m%D_FA(I,J) = InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime, p%WaveAcc(:,nodeIndx,I), m%LastIndWave, p%NStepWave + 1 )
+            m%D_FV(I,J) = InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime, p%WaveVel(:,nodeIndx,I), m%LastIndWave, p%NStepWave + 1 )            
+
             vrel(I) =  m%D_FV(I,J) - u%DistribMesh%TranslationVel(I,J)
             
-            m%D_F_I(I,J) = elementWaterState * InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime, p%D_F_I(:,I,J), &
-                                    m%LastIndWave, p%NStepWave + 1       )
+            m%D_F_I(I,J) = elementWaterState * InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime, p%D_F_I(:,I,J), m%LastIndWave, p%NStepWave + 1 )
          END DO
          
             ! (k x vrel x k)
          kvec =  p%Nodes(nodeIndx)%R_LToG(:,3)
-         v = vrel - Dot_Product(kvec,vrel)*kvec
+         v = vrel - Dot_Product(kvec,vrel) * kvec
          vmag = sqrt( v(1)*v(1) + v(2)*v(2) + v(3)*v(3)  )
-         
-                   
+
             ! Distributed added mass loads
             ! need to multiply by elementInWater value to zero out loads when out of water 
          qdotdot2(1)    =       elementWaterState *u%DistribMesh%TranslationAcc(1,J)
@@ -4599,26 +4592,16 @@ SUBROUTINE Morison_CalcOutput( Time, u, p, x, xd, z, OtherState, y, m, ErrStat, 
             ! calculated the added mass forces (moments are zero)
          m%D_F_AM_M(1:3,J)  = -matmul( p%D_AM_M (:,:,J) , qdotdot2 )  !bjj: these lines take up a lot of time. are the matrices sparse?
 
-         DO I=1,6
-            IF (I < 4 ) THEN
-                  ! We are now combining the dynamic pressure term into the inertia term  
-               m%D_F_AM_MG(I,J) = -p%D_AM_MG(J)*u%DistribMesh%TranslationAcc(I,J)
-               m%D_F_AM_F(:,J)  = -p%D_AM_F(J)*u%DistribMesh%TranslationAcc(I,J)
-               m%D_F_AM(I,J)    = m%D_F_AM_M(I,J) + m%D_F_AM_MG(I,J) + m%D_F_AM_F(I,J)           
-               m%D_F_D(I,J) = elementWaterState * vmag*v(I) * p%D_dragConst(J)      
-               m%D_F_B(I,J) = elementWaterState * p%D_F_B(I,J)
-               y%DistribMesh%Force(I,J) = m%D_F_AM(I,J) + m%D_F_D(I,J)  + m%D_F_I(I,J) + m%D_F_B(I,J) +  p%D_F_MG(I,J) + p%D_F_BF(I,J)
-            ELSE
-               m%D_F_B(I,J) = elementWaterState * p%D_F_B(I,J)
-               y%DistribMesh%Moment(I-3,J) =   m%D_F_B(I,J) + p%D_F_BF(I,J)     
-            END IF
-         END DO  ! DO I
-         
-         
-         
+            ! We are now combining the dynamic pressure term into the inertia term  
+         m%D_F_AM_MG(1:3,J) = -p%D_AM_MG(J) * u%DistribMesh%TranslationAcc(1:3,J)
+         m%D_F_AM_F(1:3,J) = -p%D_AM_F(J) * u%DistribMesh%TranslationAcc(1:3,J)
+         m%D_F_AM(1:3,J) = m%D_F_AM_M(1:3,J) + m%D_F_AM_MG(1:3,J) + m%D_F_AM_F(1:3,J)
+         m%D_F_D(1:3,J) = elementWaterState * vmag * v(1:3) * p%D_dragConst(J)
+         y%DistribMesh%Force(1:3,J) = m%D_F_AM(1:3,J) + m%D_F_D(1:3,J) + m%D_F_I(1:3,J) + m%D_F_B(1:3,J) + p%D_F_MG(1:3,J) + p%D_F_BF(1:3,J)
+         m%D_F_B(1:6,J) = elementWaterState * p%D_F_B(1:6,J)
+         y%DistribMesh%Moment(1:3,J) = m%D_F_B(4:6,J) + p%D_F_BF(4:6,J)     
       ENDDO
 
-      
       ! NOTE:  All wave kinematics have already been zeroed out above the SWL or instantaneous wave height (for WaveStMod > 0), so loads derived from the kinematics will be correct
       !        without the use of a nodeInWater value, but other loads need to be multiplied by nodeInWater to zero them out above the SWL or instantaneous wave height.
       
@@ -4629,22 +4612,15 @@ SUBROUTINE Morison_CalcOutput( Time, u, p, x, xd, z, OtherState, y, m, ErrStat, 
          nodeIndx = p%lumpedToNodeIndx(J)
          nodeInWater = REAL( InterpWrappedStpInt( REAL(Time, SiKi), p%WaveTime, p%nodeInWater(:,nodeIndx), m%LastIndWave, p%NStepWave + 1 ), ReKi )
             ! Determine the dynamic pressure at the marker
-         m%L_FDynP(J) = InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime, p%WaveDynP(:,nodeIndx), &
-                                    m%LastIndWave, p%NStepWave + 1       )
-         
-         
+         m%L_FDynP(J) = InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime, p%WaveDynP(:,nodeIndx), m%LastIndWave, p%NStepWave + 1 )
+
          DO I=1,3
                ! Determine the fluid acceleration and velocity at the marker
-            m%L_FA(I,J) = InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime, p%WaveAcc(:,nodeIndx,I), &
-                                    m%LastIndWave, p%NStepWave + 1       )
-               
-            m%L_FV(I,J) = InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime, p%WaveVel(:,nodeIndx,I), &
-                                    m%LastIndWave, p%NStepWave + 1       )
-            vrel(I)     = m%L_FV(I,J) - u%LumpedMesh%TranslationVel(I,J)
+            m%L_FA(I,J) = InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime, p%WaveAcc(:,nodeIndx,I), m%LastIndWave, p%NStepWave + 1 )
+            m%L_FV(I,J) = InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime, p%WaveVel(:,nodeIndx,I), m%LastIndWave, p%NStepWave + 1 )
+            vrel(I) = m%L_FV(I,J) - u%LumpedMesh%TranslationVel(I,J)
          END DO
-         
-         
-        
+
             ! Compute the dot product of the relative velocity vector with the directional Area of the Joint
          vmag =  nodeInWater * ( vrel(1)*p%L_An(1,J) + vrel(2)*p%L_An(2,J) + vrel(3)*p%L_An(3,J) )
          AnProd = p%L_An(1,J)**2 + p%L_An(2,J)**2 + p%L_An(3,J)**2
@@ -4653,33 +4629,26 @@ SUBROUTINE Morison_CalcOutput( Time, u, p, x, xd, z, OtherState, y, m, ErrStat, 
          ELSE
             dragFactor = p%Nodes(nodeIndx)%JAxCd*p%WtrDens*abs(vmag)*vmag / ( 4.0_ReKi * AnProd )
          END IF
-         
  
             ! Lumped added mass loads
-         qdotdot                 = reshape((/u%LumpedMesh%TranslationAcc(:,J),u%LumpedMesh%RotationAcc(:,J)/),(/6/))   
-         m%L_F_AM(:,J)           = matmul( p%L_AM_M(:,:,J) , ( - qdotdot) )
+         qdotdot = reshape((/u%LumpedMesh%TranslationAcc(:,J),u%LumpedMesh%RotationAcc(:,J)/),(/6/))   
+         m%L_F_AM(:,J) = matmul( p%L_AM_M(:,:,J) , ( - qdotdot) )
          DO I=1,3
             m%L_F_AM(I,J) = nodeInWater * m%L_F_AM(I,J)  ! Note that the rotational components are zero because L_AM_M is populated with only the upper-left 3x3
          END DO
          
+
          DO I=1,6
                         
             ! We are now combining the dynamic pressure term into the inertia term
-            m%L_F_I(I,J) = InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime, p%L_F_I(:,I,J), &
-                                    m%LastIndWave, p%NStepWave + 1       ) 
-            
-            IF (I < 4 ) THEN
-      
-               m%L_F_D(I,J) =  p%L_An(I,J)*dragFactor
-               m%L_F_B(I,J) =  nodeInWater*p%L_F_B(I,J)
-               y%LumpedMesh%Force(I,J) = m%L_F_AM(I,J) + m%L_F_D(I,J) +  m%L_F_B(I,J) + m%L_F_I(I,J)  +  p%L_F_BF(I,J)
-            ELSE
-               m%L_F_B(I,J) =  nodeInWater*p%L_F_B(I,J)
-               y%LumpedMesh%Moment(I-3,J) =   m%L_F_AM(I,J) + m%L_F_B(I,J) +   p%L_F_BF(I,J)
-            END IF
-            
-            
-         END DO      
+            m%L_F_I(I,J) = InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime, p%L_F_I(:,I,J), m%LastIndWave, p%NStepWave + 1 )            
+
+         END DO  
+
+         m%L_F_D(1:3,J) = p%L_An(1:3,J) * dragFactor
+         y%LumpedMesh%Force(1:3,J) = m%L_F_AM(1:3,J) + m%L_F_D(1:3,J) + m%L_F_B(1:3,J) + m%L_F_I(1:3,J) + p%L_F_BF(1:3,J)
+         m%L_F_B(1:6,J) = nodeInWater * p%L_F_B(1:6,J)
+         y%LumpedMesh%Moment(1:3,J) = m%L_F_AM(4:6,J) + m%L_F_B(4:6,J) + p%L_F_BF(4:6,J)
       ENDDO
      
          ! OutSwtch determines whether or not to actually output results via the WriteOutput array
