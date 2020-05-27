@@ -64,6 +64,7 @@ MODULE NWTC_IO
    CHARACTER(1), PARAMETER       :: Tab      = CHAR( 9 )                         !< The tab character.
    CHARACTER(*), PARAMETER       :: CommChars = '!#%'                            !< Comment characters that mark the end of useful input
 
+   INTEGER, PARAMETER            :: IntfStrLen  = 1025                           !< Length of strings through the C interface
 
       ! Parameters for writing to echo files (in this module only)
 
