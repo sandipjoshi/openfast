@@ -76,7 +76,8 @@ SUBROUTINE MD_Init_C(InitInp_C, u_C, p_C, x_C, xd_C, z_C, other_C, y_C, m_C, Ini
    INTEGER(IntKi)                :: ErrStat
    CHARACTER(IntfStrLen)         :: ErrMsg
 
-   ! Convert the C types to Fortran
+   print *, "Starting MD_Init_C"
+   ! Convert the C types to Fortran for all INTENT(IN) arguments
 
    ! struct_MD_InitInputType - C to Fortran
    ! InitInp%object = InitInp_C%object
@@ -164,7 +165,7 @@ SUBROUTINE MD_Init_C(InitInp_C, u_C, p_C, x_C, xd_C, z_C, other_C, y_C, m_C, Ini
 
    call MD_Init(InitInp, u, p, x, xd, z, other, y, m, DTcoupling, InitOut, ErrStat, ErrMsg)
 
-   ! Convert the Fortran types to C
+   ! Convert the Fortran types to C for all INTENT(OUT) arguments
 
    ! struct_MD_InitInputType - Fortran to C
    ! InitInp_C%object = InitInp%object
@@ -249,6 +250,7 @@ SUBROUTINE MD_Init_C(InitInp_C, u_C, p_C, x_C, xd_C, z_C, other_C, y_C, m_C, Ini
    ! InitOut_C%writeOutputUnt = InitOut%writeOutputUnt
    ! InitOut_C%writeOutputUnt_Len = InitOut%writeOutputUnt_Len
 
+   print *, "Ending MD_Init_C"
 end subroutine
 
 SUBROUTINE MD_UpdateStates_C( t, n, u_len, u_C, p_C, x_C, xd_C, z_C, other_C, m_C) BIND(C, NAME="MD_UpdateStates_C")
@@ -278,6 +280,7 @@ SUBROUTINE MD_UpdateStates_C( t, n, u_len, u_C, p_C, x_C, xd_C, z_C, other_C, m_
    REAL(DbKi) :: utimes(2)
    utimes = (/ 0.0, 0.1 /)
 
+   print *, "Starting MD_UpdateStates_C"
    ! struct_MD_ParameterType - C to Fortran
    ! p%object = p_C%object
    p%NTypes = p_C%NTypes
@@ -366,6 +369,7 @@ SUBROUTINE MD_UpdateStates_C( t, n, u_len, u_C, p_C, x_C, xd_C, z_C, other_C, m_
    ! m_C%LineStateIndList_Len = m%LineStateIndList_Len
    ! m_C%MDWrOutput = m%MDWrOutput
    ! m_C%MDWrOutput_Len = m%MDWrOutput_Len
+   print *, "Ending MD_UpdateStates_C"
 end subroutine
 
 
@@ -392,7 +396,9 @@ subroutine MD_End_C(u_C, p_C, x_C, xd_C, z_C, other_C, y_C, m_C) BIND(C, NAME="M
    INTEGER(IntKi) :: ErrStat
    CHARACTER(IntfStrLen) :: ErrMsg
 
-   ! Convert the C types to Fortran
+   print *, "Starting MD_End_C"
+
+   ! Convert the C types to Fortran for all INTENT(IN) arguments
 
    ! struct_MD_InputType - C to Fortran
    ! u%object = u_C%object
@@ -453,7 +459,7 @@ subroutine MD_End_C(u_C, p_C, x_C, xd_C, z_C, other_C, y_C, m_C) BIND(C, NAME="M
 
    call MD_END(u, p, x, xd, z, other, y, m, ErrStat , ErrMsg)
 
-   ! Convert the Fortran types to C
+   ! Convert the Fortran types to C for all INTENT(OUT) arguments
 
    ! struct_MD_InputType - Fortran to C
    ! u_C%object = u%object
@@ -513,6 +519,7 @@ subroutine MD_End_C(u_C, p_C, x_C, xd_C, z_C, other_C, y_C, m_C) BIND(C, NAME="M
    ! m_C%MDWrOutput = m%MDWrOutput
    ! m_C%MDWrOutput_Len = m%MDWrOutput_Len
 
+   print *, "Ending MD_End_C"
 end subroutine
 
 END MODULE
