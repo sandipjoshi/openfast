@@ -27,6 +27,7 @@ USE iso_c_binding
 implicit none
 
 PUBLIC :: MD_Init_C
+PUBLIC :: MD_UpdateStates_C
 PUBLIC :: MD_End_C
 
 CONTAINS
@@ -46,7 +47,7 @@ subroutine c2f_string(c_string, f_string)
    f_string = trim(temp_string)
 end subroutine
 
-SUBROUTINE MD_Init_C(InitInp_C, u_C, p_C, x_C, xd_C, z_C, other_C, y_C, m_C, InitOut_C) BIND(C, NAME="MD_Init_C")
+SUBROUTINE MD_Init_C(InitInp_C, u_C, p_C, x_C, xd_C, z_C, other_C, y_C, m_C, DTcoupling_C, InitOut_C) BIND(C, NAME="MD_Init_C")
    TYPE(MD_InitInputType_C),       INTENT(INOUT)  :: InitInp_C
    TYPE(MD_InputType_C),           INTENT(INOUT)  :: u_C
    TYPE(MD_ParameterType_C),       INTENT(  OUT)  :: p_C
@@ -56,7 +57,7 @@ SUBROUTINE MD_Init_C(InitInp_C, u_C, p_C, x_C, xd_C, z_C, other_C, y_C, m_C, Ini
    TYPE(MD_OtherStateType_C),      INTENT(  OUT)  :: other_C
    TYPE(MD_OutputType_C),          INTENT(  OUT)  :: y_C
    TYPE(MD_MiscVarType_C),         INTENT(  OUT)  :: m_C
-   ! REAL(DbKi),                   INTENT(INOUT)  :: DTcoupling  ! Coupling interval in seconds: the rate that Output is the actual coupling interval
+   REAL(C_DOUBLE),                 INTENT(INOUT)  :: DTcoupling_C
    TYPE(MD_InitOutputType_C),      INTENT(INOUT)  :: InitOut_C
    ! INTEGER(IntKi),               INTENT(  OUT)  :: ErrStat     ! Error status of the operation
    ! CHARACTER(*),                 INTENT(  OUT)  :: ErrMsg      ! Error message if ErrStat /= ErrID_None
@@ -77,7 +78,9 @@ SUBROUTINE MD_Init_C(InitInp_C, u_C, p_C, x_C, xd_C, z_C, other_C, y_C, m_C, Ini
    CHARACTER(IntfStrLen)         :: ErrMsg
 
    print *, "Starting MD_Init_C"
+
    ! Convert the C types to Fortran for all INTENT(IN) arguments
+   DTcoupling = REAL(DTcoupling_C, DbKi)
 
    ! struct_MD_InitInputType - C to Fortran
    ! InitInp%object = InitInp_C%object
@@ -166,6 +169,7 @@ SUBROUTINE MD_Init_C(InitInp_C, u_C, p_C, x_C, xd_C, z_C, other_C, y_C, m_C, Ini
    call MD_Init(InitInp, u, p, x, xd, z, other, y, m, DTcoupling, InitOut, ErrStat, ErrMsg)
 
    ! Convert the Fortran types to C for all INTENT(OUT) arguments
+   DTcoupling_C = REAL(DTcoupling, C_DOUBLE)
 
    ! struct_MD_InitInputType - Fortran to C
    ! InitInp_C%object = InitInp%object
@@ -253,11 +257,11 @@ SUBROUTINE MD_Init_C(InitInp_C, u_C, p_C, x_C, xd_C, z_C, other_C, y_C, m_C, Ini
    print *, "Ending MD_Init_C"
 end subroutine
 
-SUBROUTINE MD_UpdateStates_C( t, n, u_len, u_C, p_C, x_C, xd_C, z_C, other_C, m_C) BIND(C, NAME="MD_UpdateStates_C")
-   REAL(DbKi)                      , INTENT(IN   ) :: t
-   INTEGER(IntKi)                  , INTENT(IN   ) :: n
-   INTEGER                         , INTENT(IN   ) :: u_len
-   TYPE(MD_InputType_C)            , INTENT(INOUT) :: u_C(u_len)  ! INTENT(INOUT) ! had to change this to INOUT
+SUBROUTINE MD_UpdateStates_C( t_C, n, u_len, u_C, p_C, x_C, xd_C, z_C, other_C, m_C) BIND(C, NAME="MD_UpdateStates_C")
+   REAL(C_DOUBLE)                    , INTENT(IN   ) :: t_C
+   INTEGER(C_INT)                    , INTENT(IN   ) :: n
+   INTEGER(C_INT)                    , INTENT(IN   ) :: u_len
+   TYPE(MD_InputType_C)              , INTENT(INOUT) :: u_C(u_len)  ! INTENT(INOUT) ! had to change this to INOUT
    ! REAL(DbKi)                      , INTENT(IN   ) :: utimes(:)
    TYPE(MD_ParameterType_C)          , INTENT(IN   ) :: p_C
    TYPE(MD_ContinuousStateType_C)    , INTENT(INOUT) :: x_C
@@ -266,8 +270,8 @@ SUBROUTINE MD_UpdateStates_C( t, n, u_len, u_C, p_C, x_C, xd_C, z_C, other_C, m_
    TYPE(MD_OtherStateType_C)         , INTENT(INOUT) :: other_C
    TYPE(MD_MiscVarType_C)            , INTENT(INOUT) :: m_C
 
-
-   TYPE(MD_InputType)              :: u(2)       ! INTENT(INOUT) ! had to change this to INOUT
+   REAL(DbKi)                      :: t
+   TYPE(MD_InputType)              :: u(1)       ! INTENT(INOUT) ! had to change this to INOUT
    TYPE(MD_ParameterType)          :: p          ! INTENT(IN   )
    TYPE(MD_ContinuousStateType)    :: x          ! INTENT(INOUT)
    TYPE(MD_DiscreteStateType)      :: xd         ! INTENT(INOUT)
@@ -281,6 +285,9 @@ SUBROUTINE MD_UpdateStates_C( t, n, u_len, u_C, p_C, x_C, xd_C, z_C, other_C, m_
    utimes = (/ 0.0, 0.1 /)
 
    print *, "Starting MD_UpdateStates_C"
+   ! Convert the C types to Fortran for all INTENT(IN) arguments
+   t = REAL(t_C, DbKi)
+
    ! struct_MD_ParameterType - C to Fortran
    ! p%object = p_C%object
    p%NTypes = p_C%NTypes

@@ -36,6 +36,7 @@ init_output_type = MoorDyn_Types.MD_InitOutputType_t()
 
 utimes = c_float * 2
 utimes(0.0, 0.1)
+time_step = c_double(0.01)
 
 # init_input_type.g = c_float(9.81)
 # init_input_type.rhoW = c_float(1025)
@@ -57,7 +58,7 @@ moordynlib.MD_Init_C.argtypes = [
 	POINTER(MoorDyn_Types.MD_OtherStateType_t),
 	POINTER(MoorDyn_Types.MD_OutputType_t),
 	POINTER(MoorDyn_Types.MD_MiscVarType_t),
-	# REAL(DbKi),  						:: DTcoupling
+	POINTER(c_double),
     POINTER(MoorDyn_Types.MD_InitOutputType_t),
 	# INTEGER(IntKi),                 	:: ErrStat
 	# CHARACTER(*),                   	:: ErrMsg
@@ -108,12 +109,14 @@ result = moordynlib.MD_Init_C(
 	byref(other_state_type),
 	byref(output_type),
 	byref(misc_var_type),
+	byref(time_step),
 	byref(init_output_type)
 )
 for t in [0, 0.1]:
 	moordynlib.MD_UpdateStates_C(
-		c_double(t),
-		c_int(1),
+		byref(c_double(t)),
+		byref(c_int(1)),
+		byref(c_int(1)),
 		byref(input_type),
 		# utimes,
 		byref(parameter_type),
