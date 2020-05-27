@@ -23,8 +23,8 @@ set(MOORDYN_LIBS_SOURCES
   src/MoorDyn_IO.f90
   src/MoorDyn_Types.f90
 
-  src/MoorDyn_Types.C.f90
-  src/MoorDyn.C.f90
+  src/MoorDyn_Types_C.f90
+  src/MoorDyn_C.f90
 )
 
 add_library(moordynlib ${MOORDYN_LIBS_SOURCES})
