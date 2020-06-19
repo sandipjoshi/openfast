@@ -98,22 +98,22 @@ class struct_MD_InitInputType(ctypes.Structure, BaseOpenFASTType):
     _openfast_name = "InitInp"
     _pack_ = True # source:False
     _fields_ = [
-        ('object', POINTER_T(None)),
+        # ('object', POINTER_T(None)),
         ('g', ctypes.c_float),
         ('rhoW', ctypes.c_float),
         ('WtrDepth', ctypes.c_float),
         ('PtfmInit', ctypes.c_float * 6),
-        ('FileName', ctypes.c_char * 1024),
-        ('RootName', ctypes.c_char * 1024),
+        ('FileName', ctypes.c_char * 1025),
+        ('RootName', ctypes.c_char * 1025),
         ('Echo', ctypes.c_bool),
-        ('PADDING_0', ctypes.c_ubyte * 3),
+        # ('PADDING_0', ctypes.c_ubyte * 3),
         ('DTIC', ctypes.c_float),
-        ('TMaxIC', ctypes.c_float),
-        ('CdScaleIC', ctypes.c_float),
-        ('threshIC', ctypes.c_float),
-        ('OutList', POINTER_T(ctypes.c_char)),
-        ('OutList_Len', ctypes.c_int32),
-        ('PADDING_1', ctypes.c_ubyte * 4),
+        # ('TMaxIC', ctypes.c_float),
+        # ('CdScaleIC', ctypes.c_float),
+        # ('threshIC', ctypes.c_float),
+        # ('OutList', POINTER_T(ctypes.c_char)),
+        # ('OutList_Len', ctypes.c_int32),
+        # ('PADDING_1', ctypes.c_ubyte * 4),
     ]
 
 MD_InitInputType_t = struct_MD_InitInputType

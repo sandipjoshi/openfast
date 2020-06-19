@@ -10,9 +10,11 @@ from ctypes import (
 	c_int,
 	c_float,
 	c_double,
+	c_longdouble,
 	create_string_buffer,
 	byref,
-	get_errno
+	get_errno,
+	sizeof
 )
 import MoorDyn_Types
 
@@ -34,18 +36,16 @@ output_type = MoorDyn_Types.MD_OutputType_t()
 misc_var_type = MoorDyn_Types.MD_MiscVarType_t()
 init_output_type = MoorDyn_Types.MD_InitOutputType_t()
 
-utimes = c_float * 2
-utimes(0.0, 0.1)
 time_step = c_double(0.01)
+# utimes = c_float * 2
+# utimes(0.0, 0.1)
 
-# init_input_type.g = c_float(9.81)
-# init_input_type.rhoW = c_float(1025)
-# init_input_type.WtrDepth = c_float(10.0)
-# init_input_type.FileName = create_string_buffer( 1024 )
-# init_input_type.RootName = create_string_buffer( 1024 )
-# print(init_input_type.FileName.raw)
-# init_input_type.RootName = create_string_buffer( b"MoorDyn.MD" )
-# init_input_type.PtfmInit = (6 * c_float)(0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+init_input_type.g = c_float(9.81)
+init_input_type.rhoW = c_float(1025)
+init_input_type.WtrDepth = c_float(10.0)
+init_input_type.PtfmInit = (6 * c_float)(0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+init_input_type.FileName = b"MoorDyn.dat"
+init_input_type.RootName = b"MoorDyn.MD"
 
 # Configure the MoorDyn functions
 moordynlib.MD_Init_C.argtypes = [
@@ -81,19 +81,19 @@ moordynlib.MD_UpdateStates_C.argtypes = [
 ]
 moordynlib.MD_UpdateStates_C.restype = c_int
 
-moordynlib.MD_End_C.argtypes = [
-	POINTER(MoorDyn_Types.MD_InputType_t),
-	POINTER(MoorDyn_Types.MD_ParameterType_t),
-	POINTER(MoorDyn_Types.MD_ContinuousStateType_t),
-	POINTER(MoorDyn_Types.MD_DiscreteStateType_t),
-	POINTER(MoorDyn_Types.MD_ConstraintStateType_t),
-	POINTER(MoorDyn_Types.MD_OtherStateType_t),
-	POINTER(MoorDyn_Types.MD_OutputType_t),
-	POINTER(MoorDyn_Types.MD_MiscVarType_t),
-	# INTEGER(IntKi),                 	:: ErrStat
-	# CHARACTER(*),                   	:: ErrMsg
-]
-moordynlib.MD_End_C.restype = c_int
+# moordynlib.MD_End_C.argtypes = [
+# 	POINTER(MoorDyn_Types.MD_InputType_t),
+# 	POINTER(MoorDyn_Types.MD_ParameterType_t),
+# 	POINTER(MoorDyn_Types.MD_ContinuousStateType_t),
+# 	POINTER(MoorDyn_Types.MD_DiscreteStateType_t),
+# 	POINTER(MoorDyn_Types.MD_ConstraintStateType_t),
+# 	POINTER(MoorDyn_Types.MD_OtherStateType_t),
+# 	POINTER(MoorDyn_Types.MD_OutputType_t),
+# 	POINTER(MoorDyn_Types.MD_MiscVarType_t),
+# 	# INTEGER(IntKi),                 	:: ErrStat
+# 	# CHARACTER(*),                   	:: ErrMsg
+# ]
+# moordynlib.MD_End_C.restype = c_int
 
 
 
@@ -112,7 +112,8 @@ result = moordynlib.MD_Init_C(
 	byref(time_step),
 	byref(init_output_type)
 )
-for t in [0, 0.1]:
+
+for t in [0]: #, 0.1]:
 	moordynlib.MD_UpdateStates_C(
 		byref(c_double(t)),
 		byref(c_int(1)),
@@ -127,16 +128,16 @@ for t in [0, 0.1]:
 		byref(misc_var_type),
 	)
 
-moordynlib.MD_End_C(
-	byref(input_type),
-	byref(parameter_type),
-	byref(continuous_state_type),
-	byref(discrete_state_type),
-	byref(constraint_state_type),
-	byref(other_state_type),
-	byref(output_type),
-	byref(misc_var_type),
-)
+# moordynlib.MD_End_C(
+# 	byref(input_type),
+# 	byref(parameter_type),
+# 	byref(continuous_state_type),
+# 	byref(discrete_state_type),
+# 	byref(constraint_state_type),
+# 	byref(other_state_type),
+# 	byref(output_type),
+# 	byref(misc_var_type),
+# )
 
 
 
