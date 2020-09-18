@@ -1,3 +1,11 @@
+KiteFAST Redirected
+===================
+
+The KiteFAST source code is available in a "fork" of the main OpenFAST repository at 
+https://github.com/OpenFAST/KiteFAST. Please visit that repository for further information,
+links to the documentation, and open `issues <https://github.com/openfast/kitefast/issues>`_
+or `pull requests <https://github.com/openfast/kitefast/pulls>`_.
+
 OpenFAST
 ========
 
