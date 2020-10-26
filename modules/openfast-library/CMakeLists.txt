@@ -53,7 +53,13 @@ add_library(openfast_postlib
   )
 target_link_libraries(openfast_postlib openfast_prelib scfastlib foamfastlib versioninfolib)
 
-add_library(openfastlib src/FAST_Library.f90)
+if(BUILD_OPENFAST_SIMULINK_API)
+  # For Simulink, create a shared library with the OpenFAST modules statically linked
+  add_library(openfastlib SHARED src/FAST_Library.f90)
+else()
+  # Otherwise, use the setting in the BUILD_SHARED_LIBS flag
+  add_library(openfastlib src/FAST_Library.f90)
+endif()
 target_link_libraries(openfastlib openfast_postlib openfast_prelib scfastlib foamfastlib)
 
 string(TOUPPER ${CMAKE_Fortran_COMPILER_ID} _compiler_id)
