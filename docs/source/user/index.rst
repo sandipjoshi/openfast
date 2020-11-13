@@ -12,6 +12,9 @@ Details on the transition from FAST v8 to OpenFAST may be found in :numref:`fast
 .. toctree::
    :maxdepth: 1
 
+   introduction.rst
+   fast_to_openfast.rst
+   openfast/index.rst
    api_change.rst
    aerodyn/index.rst
    aerodyn-olaf/index.rst
@@ -21,4 +24,3 @@ Details on the transition from FAST v8 to OpenFAST may be found in :numref:`fast
    hydrodyn/index.rst
    fast_to_openfast.rst
    cppapi/index.rst
-
