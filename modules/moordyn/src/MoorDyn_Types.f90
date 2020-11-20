@@ -33,6 +33,29 @@ MODULE MoorDyn_Types
 !---------------------------------------------------------------------------------------------------------------------------------
 USE NWTC_Library
 IMPLICIT NONE
+! =========  MD_InputData  =======
+  TYPE, PUBLIC :: MD_InputData
+    LOGICAL  :: Echo      !< Echo the input file [-]
+    INTEGER(IntKi)  :: NTypes      !< Type of windfile [-]
+    CHARACTER(1024) , DIMENSION(:,:), ALLOCATABLE  :: LineTypes      !< Direction of wind propagation (meteorological direction) [(degrees)]
+    INTEGER(IntKi)  :: NConnects      !< Type of windfile [-]
+    CHARACTER(1024) , DIMENSION(:,:), ALLOCATABLE  :: Connections      !< Direction of wind propagation (meteorological direction) [(degrees)]
+    INTEGER(IntKi)  :: NLines      !< Type of windfile [-]
+    CHARACTER(1024) , DIMENSION(:,:), ALLOCATABLE  :: Lines      !< Direction of wind propagation (meteorological direction) [(degrees)]
+    REAL(ReKi)  :: dtM      !< List of Z coordinates for wind velocity measurements [meters]
+    REAL(ReKi)  :: g      !< List of Z coordinates for wind velocity measurements [meters]
+    REAL(ReKi)  :: rhoW      !< List of Z coordinates for wind velocity measurements [meters]
+    REAL(ReKi)  :: WtrDpth      !< List of Z coordinates for wind velocity measurements [meters]
+    REAL(ReKi)  :: kbot      !< Steady wind -- horizontal windspeed [meters/s]
+    REAL(ReKi)  :: cbot      !< Steady wind -- reference height [meters]
+    REAL(ReKi)  :: dtIC      !< Steady wind -- power law exponent [-]
+    REAL(ReKi)  :: TmaxIC      !< Steady wind -- power law exponent [-]
+    REAL(ReKi)  :: CdScaleIC      !< Steady wind -- power law exponent [-]
+    REAL(ReKi)  :: threshIC      !< Steady wind -- power law exponent [-]
+    CHARACTER(ChanLen) , DIMENSION(:), ALLOCATABLE  :: OutList      !< List of user-requested output channels [-]
+    INTEGER(IntKi)  :: NumOuts      !< List of user-requested output channels [-]
+  END TYPE MD_InputData
+! =======================
 ! =========  MD_InitInputType  =======
   TYPE, PUBLIC :: MD_InitInputType
     REAL(ReKi)  :: g = -999.9      !< gravity constant [[m/s^2]]
@@ -47,6 +70,8 @@ IMPLICIT NONE
     REAL(ReKi)  :: CdScaleIC = 1      !< factor to scale drag coefficients by during dynamic relaxation [[]]
     REAL(ReKi)  :: threshIC = 0.01      !< convergence tolerance for ICs  (0.01 means 1%) [[]]
     CHARACTER(ChanLen) , DIMENSION(:), ALLOCATABLE  :: OutList      !< string containing list of output channels requested in input file [-]
+    LOGICAL  :: UseInputFile = .TRUE.      !< TRUE to parse inputs from a file; FALSE to get inputs in memory. [-]
+    TYPE(FileInfoType)  :: PassedInputData 
   END TYPE MD_InitInputType
 ! =======================
 ! =========  MD_LineProp  =======
@@ -202,6 +227,485 @@ IMPLICIT NONE
   END TYPE MD_OutputType
 ! =======================
 CONTAINS
+ SUBROUTINE MD_CopyInputData( SrcInputDataData, DstInputDataData, CtrlCode, ErrStat, ErrMsg )
+   TYPE(MD_InputData), INTENT(IN) :: SrcInputDataData
+   TYPE(MD_InputData), INTENT(INOUT) :: DstInputDataData
+   INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
+   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
+   CHARACTER(*),    INTENT(  OUT) :: ErrMsg
+! Local 
+   INTEGER(IntKi)                 :: i,j,k
+   INTEGER(IntKi)                 :: i1, i1_l, i1_u  !  bounds (upper/lower) for an array dimension 1
+   INTEGER(IntKi)                 :: i2, i2_l, i2_u  !  bounds (upper/lower) for an array dimension 2
+   INTEGER(IntKi)                 :: i3, i3_l, i3_u  !  bounds (upper/lower) for an array dimension 3
+   INTEGER(IntKi)                 :: ErrStat2
+   CHARACTER(ErrMsgLen)           :: ErrMsg2
+   CHARACTER(*), PARAMETER        :: RoutineName = 'MD_CopyInputData'
+! 
+   ErrStat = ErrID_None
+   ErrMsg  = ""
+    DstInputDataData%Echo = SrcInputDataData%Echo
+    DstInputDataData%NTypes = SrcInputDataData%NTypes
+IF (ALLOCATED(SrcInputDataData%LineTypes)) THEN
+  i1_l = LBOUND(SrcInputDataData%LineTypes,1)
+  i1_u = UBOUND(SrcInputDataData%LineTypes,1)
+  i2_l = LBOUND(SrcInputDataData%LineTypes,2)
+  i2_u = UBOUND(SrcInputDataData%LineTypes,2)
+  IF (.NOT. ALLOCATED(DstInputDataData%LineTypes)) THEN 
+    ALLOCATE(DstInputDataData%LineTypes(i1_l:i1_u,i2_l:i2_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+      CALL SetErrStat(ErrID_Fatal, 'Error allocating DstInputDataData%LineTypes.', ErrStat, ErrMsg,RoutineName)
+      RETURN
+    END IF
+  END IF
+    DstInputDataData%LineTypes = SrcInputDataData%LineTypes
+ENDIF
+    DstInputDataData%NConnects = SrcInputDataData%NConnects
+IF (ALLOCATED(SrcInputDataData%Connections)) THEN
+  i1_l = LBOUND(SrcInputDataData%Connections,1)
+  i1_u = UBOUND(SrcInputDataData%Connections,1)
+  i2_l = LBOUND(SrcInputDataData%Connections,2)
+  i2_u = UBOUND(SrcInputDataData%Connections,2)
+  IF (.NOT. ALLOCATED(DstInputDataData%Connections)) THEN 
+    ALLOCATE(DstInputDataData%Connections(i1_l:i1_u,i2_l:i2_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+      CALL SetErrStat(ErrID_Fatal, 'Error allocating DstInputDataData%Connections.', ErrStat, ErrMsg,RoutineName)
+      RETURN
+    END IF
+  END IF
+    DstInputDataData%Connections = SrcInputDataData%Connections
+ENDIF
+    DstInputDataData%NLines = SrcInputDataData%NLines
+IF (ALLOCATED(SrcInputDataData%Lines)) THEN
+  i1_l = LBOUND(SrcInputDataData%Lines,1)
+  i1_u = UBOUND(SrcInputDataData%Lines,1)
+  i2_l = LBOUND(SrcInputDataData%Lines,2)
+  i2_u = UBOUND(SrcInputDataData%Lines,2)
+  IF (.NOT. ALLOCATED(DstInputDataData%Lines)) THEN 
+    ALLOCATE(DstInputDataData%Lines(i1_l:i1_u,i2_l:i2_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+      CALL SetErrStat(ErrID_Fatal, 'Error allocating DstInputDataData%Lines.', ErrStat, ErrMsg,RoutineName)
+      RETURN
+    END IF
+  END IF
+    DstInputDataData%Lines = SrcInputDataData%Lines
+ENDIF
+    DstInputDataData%dtM = SrcInputDataData%dtM
+    DstInputDataData%g = SrcInputDataData%g
+    DstInputDataData%rhoW = SrcInputDataData%rhoW
+    DstInputDataData%WtrDpth = SrcInputDataData%WtrDpth
+    DstInputDataData%kbot = SrcInputDataData%kbot
+    DstInputDataData%cbot = SrcInputDataData%cbot
+    DstInputDataData%dtIC = SrcInputDataData%dtIC
+    DstInputDataData%TmaxIC = SrcInputDataData%TmaxIC
+    DstInputDataData%CdScaleIC = SrcInputDataData%CdScaleIC
+    DstInputDataData%threshIC = SrcInputDataData%threshIC
+IF (ALLOCATED(SrcInputDataData%OutList)) THEN
+  i1_l = LBOUND(SrcInputDataData%OutList,1)
+  i1_u = UBOUND(SrcInputDataData%OutList,1)
+  IF (.NOT. ALLOCATED(DstInputDataData%OutList)) THEN 
+    ALLOCATE(DstInputDataData%OutList(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+      CALL SetErrStat(ErrID_Fatal, 'Error allocating DstInputDataData%OutList.', ErrStat, ErrMsg,RoutineName)
+      RETURN
+    END IF
+  END IF
+    DstInputDataData%OutList = SrcInputDataData%OutList
+ENDIF
+    DstInputDataData%NumOuts = SrcInputDataData%NumOuts
+ END SUBROUTINE MD_CopyInputData
+
+ SUBROUTINE MD_DestroyInputData( InputDataData, ErrStat, ErrMsg )
+  TYPE(MD_InputData), INTENT(INOUT) :: InputDataData
+  INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
+  CHARACTER(*),    INTENT(  OUT) :: ErrMsg
+  CHARACTER(*),    PARAMETER :: RoutineName = 'MD_DestroyInputData'
+  INTEGER(IntKi)                 :: i, i1, i2, i3, i4, i5 
+! 
+  ErrStat = ErrID_None
+  ErrMsg  = ""
+IF (ALLOCATED(InputDataData%LineTypes)) THEN
+  DEALLOCATE(InputDataData%LineTypes)
+ENDIF
+IF (ALLOCATED(InputDataData%Connections)) THEN
+  DEALLOCATE(InputDataData%Connections)
+ENDIF
+IF (ALLOCATED(InputDataData%Lines)) THEN
+  DEALLOCATE(InputDataData%Lines)
+ENDIF
+IF (ALLOCATED(InputDataData%OutList)) THEN
+  DEALLOCATE(InputDataData%OutList)
+ENDIF
+ END SUBROUTINE MD_DestroyInputData
+
+ SUBROUTINE MD_PackInputData( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
+  REAL(ReKi),       ALLOCATABLE, INTENT(  OUT) :: ReKiBuf(:)
+  REAL(DbKi),       ALLOCATABLE, INTENT(  OUT) :: DbKiBuf(:)
+  INTEGER(IntKi),   ALLOCATABLE, INTENT(  OUT) :: IntKiBuf(:)
+  TYPE(MD_InputData),  INTENT(IN) :: InData
+  INTEGER(IntKi),   INTENT(  OUT) :: ErrStat
+  CHARACTER(*),     INTENT(  OUT) :: ErrMsg
+  LOGICAL,OPTIONAL, INTENT(IN   ) :: SizeOnly
+    ! Local variables
+  INTEGER(IntKi)                 :: Re_BufSz
+  INTEGER(IntKi)                 :: Re_Xferred
+  INTEGER(IntKi)                 :: Db_BufSz
+  INTEGER(IntKi)                 :: Db_Xferred
+  INTEGER(IntKi)                 :: Int_BufSz
+  INTEGER(IntKi)                 :: Int_Xferred
+  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5
+  LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
+  INTEGER(IntKi)                 :: ErrStat2
+  CHARACTER(ErrMsgLen)           :: ErrMsg2
+  CHARACTER(*), PARAMETER        :: RoutineName = 'MD_PackInputData'
+ ! buffers to store subtypes, if any
+  REAL(ReKi),      ALLOCATABLE   :: Re_Buf(:)
+  REAL(DbKi),      ALLOCATABLE   :: Db_Buf(:)
+  INTEGER(IntKi),  ALLOCATABLE   :: Int_Buf(:)
+
+  OnlySize = .FALSE.
+  IF ( PRESENT(SizeOnly) ) THEN
+    OnlySize = SizeOnly
+  ENDIF
+    !
+  ErrStat = ErrID_None
+  ErrMsg  = ""
+  Re_BufSz  = 0
+  Db_BufSz  = 0
+  Int_BufSz  = 0
+      Int_BufSz  = Int_BufSz  + 1  ! Echo
+      Int_BufSz  = Int_BufSz  + 1  ! NTypes
+  Int_BufSz   = Int_BufSz   + 1     ! LineTypes allocated yes/no
+  IF ( ALLOCATED(InData%LineTypes) ) THEN
+    Int_BufSz   = Int_BufSz   + 2*2  ! LineTypes upper/lower bounds for each dimension
+      Int_BufSz  = Int_BufSz  + SIZE(InData%LineTypes)*LEN(InData%LineTypes)  ! LineTypes
+  END IF
+      Int_BufSz  = Int_BufSz  + 1  ! NConnects
+  Int_BufSz   = Int_BufSz   + 1     ! Connections allocated yes/no
+  IF ( ALLOCATED(InData%Connections) ) THEN
+    Int_BufSz   = Int_BufSz   + 2*2  ! Connections upper/lower bounds for each dimension
+      Int_BufSz  = Int_BufSz  + SIZE(InData%Connections)*LEN(InData%Connections)  ! Connections
+  END IF
+      Int_BufSz  = Int_BufSz  + 1  ! NLines
+  Int_BufSz   = Int_BufSz   + 1     ! Lines allocated yes/no
+  IF ( ALLOCATED(InData%Lines) ) THEN
+    Int_BufSz   = Int_BufSz   + 2*2  ! Lines upper/lower bounds for each dimension
+      Int_BufSz  = Int_BufSz  + SIZE(InData%Lines)*LEN(InData%Lines)  ! Lines
+  END IF
+      Re_BufSz   = Re_BufSz   + 1  ! dtM
+      Re_BufSz   = Re_BufSz   + 1  ! g
+      Re_BufSz   = Re_BufSz   + 1  ! rhoW
+      Re_BufSz   = Re_BufSz   + 1  ! WtrDpth
+      Re_BufSz   = Re_BufSz   + 1  ! kbot
+      Re_BufSz   = Re_BufSz   + 1  ! cbot
+      Re_BufSz   = Re_BufSz   + 1  ! dtIC
+      Re_BufSz   = Re_BufSz   + 1  ! TmaxIC
+      Re_BufSz   = Re_BufSz   + 1  ! CdScaleIC
+      Re_BufSz   = Re_BufSz   + 1  ! threshIC
+  Int_BufSz   = Int_BufSz   + 1     ! OutList allocated yes/no
+  IF ( ALLOCATED(InData%OutList) ) THEN
+    Int_BufSz   = Int_BufSz   + 2*1  ! OutList upper/lower bounds for each dimension
+      Int_BufSz  = Int_BufSz  + SIZE(InData%OutList)*LEN(InData%OutList)  ! OutList
+  END IF
+      Int_BufSz  = Int_BufSz  + 1  ! NumOuts
+  IF ( Re_BufSz  .GT. 0 ) THEN 
+     ALLOCATE( ReKiBuf(  Re_BufSz  ), STAT=ErrStat2 )
+     IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating ReKiBuf.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+     END IF
+  END IF
+  IF ( Db_BufSz  .GT. 0 ) THEN 
+     ALLOCATE( DbKiBuf(  Db_BufSz  ), STAT=ErrStat2 )
+     IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating DbKiBuf.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+     END IF
+  END IF
+  IF ( Int_BufSz  .GT. 0 ) THEN 
+     ALLOCATE( IntKiBuf(  Int_BufSz  ), STAT=ErrStat2 )
+     IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating IntKiBuf.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+     END IF
+  END IF
+  IF(OnlySize) RETURN ! return early if only trying to allocate buffers (not pack them)
+
+  Re_Xferred  = 1
+  Db_Xferred  = 1
+  Int_Xferred = 1
+
+    IntKiBuf(Int_Xferred) = TRANSFER(InData%Echo, IntKiBuf(1))
+    Int_Xferred = Int_Xferred + 1
+    IntKiBuf(Int_Xferred) = InData%NTypes
+    Int_Xferred = Int_Xferred + 1
+  IF ( .NOT. ALLOCATED(InData%LineTypes) ) THEN
+    IntKiBuf( Int_Xferred ) = 0
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    IntKiBuf( Int_Xferred ) = 1
+    Int_Xferred = Int_Xferred + 1
+    IntKiBuf( Int_Xferred    ) = LBOUND(InData%LineTypes,1)
+    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%LineTypes,1)
+    Int_Xferred = Int_Xferred + 2
+    IntKiBuf( Int_Xferred    ) = LBOUND(InData%LineTypes,2)
+    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%LineTypes,2)
+    Int_Xferred = Int_Xferred + 2
+
+      DO i2 = LBOUND(InData%LineTypes,2), UBOUND(InData%LineTypes,2)
+        DO i1 = LBOUND(InData%LineTypes,1), UBOUND(InData%LineTypes,1)
+          DO I = 1, LEN(InData%LineTypes)
+            IntKiBuf(Int_Xferred) = ICHAR(InData%LineTypes(i1,i2)(I:I), IntKi)
+            Int_Xferred = Int_Xferred + 1
+          END DO ! I
+        END DO
+      END DO
+  END IF
+    IntKiBuf(Int_Xferred) = InData%NConnects
+    Int_Xferred = Int_Xferred + 1
+  IF ( .NOT. ALLOCATED(InData%Connections) ) THEN
+    IntKiBuf( Int_Xferred ) = 0
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    IntKiBuf( Int_Xferred ) = 1
+    Int_Xferred = Int_Xferred + 1
+    IntKiBuf( Int_Xferred    ) = LBOUND(InData%Connections,1)
+    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%Connections,1)
+    Int_Xferred = Int_Xferred + 2
+    IntKiBuf( Int_Xferred    ) = LBOUND(InData%Connections,2)
+    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%Connections,2)
+    Int_Xferred = Int_Xferred + 2
+
+      DO i2 = LBOUND(InData%Connections,2), UBOUND(InData%Connections,2)
+        DO i1 = LBOUND(InData%Connections,1), UBOUND(InData%Connections,1)
+          DO I = 1, LEN(InData%Connections)
+            IntKiBuf(Int_Xferred) = ICHAR(InData%Connections(i1,i2)(I:I), IntKi)
+            Int_Xferred = Int_Xferred + 1
+          END DO ! I
+        END DO
+      END DO
+  END IF
+    IntKiBuf(Int_Xferred) = InData%NLines
+    Int_Xferred = Int_Xferred + 1
+  IF ( .NOT. ALLOCATED(InData%Lines) ) THEN
+    IntKiBuf( Int_Xferred ) = 0
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    IntKiBuf( Int_Xferred ) = 1
+    Int_Xferred = Int_Xferred + 1
+    IntKiBuf( Int_Xferred    ) = LBOUND(InData%Lines,1)
+    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%Lines,1)
+    Int_Xferred = Int_Xferred + 2
+    IntKiBuf( Int_Xferred    ) = LBOUND(InData%Lines,2)
+    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%Lines,2)
+    Int_Xferred = Int_Xferred + 2
+
+      DO i2 = LBOUND(InData%Lines,2), UBOUND(InData%Lines,2)
+        DO i1 = LBOUND(InData%Lines,1), UBOUND(InData%Lines,1)
+          DO I = 1, LEN(InData%Lines)
+            IntKiBuf(Int_Xferred) = ICHAR(InData%Lines(i1,i2)(I:I), IntKi)
+            Int_Xferred = Int_Xferred + 1
+          END DO ! I
+        END DO
+      END DO
+  END IF
+    ReKiBuf(Re_Xferred) = InData%dtM
+    Re_Xferred = Re_Xferred + 1
+    ReKiBuf(Re_Xferred) = InData%g
+    Re_Xferred = Re_Xferred + 1
+    ReKiBuf(Re_Xferred) = InData%rhoW
+    Re_Xferred = Re_Xferred + 1
+    ReKiBuf(Re_Xferred) = InData%WtrDpth
+    Re_Xferred = Re_Xferred + 1
+    ReKiBuf(Re_Xferred) = InData%kbot
+    Re_Xferred = Re_Xferred + 1
+    ReKiBuf(Re_Xferred) = InData%cbot
+    Re_Xferred = Re_Xferred + 1
+    ReKiBuf(Re_Xferred) = InData%dtIC
+    Re_Xferred = Re_Xferred + 1
+    ReKiBuf(Re_Xferred) = InData%TmaxIC
+    Re_Xferred = Re_Xferred + 1
+    ReKiBuf(Re_Xferred) = InData%CdScaleIC
+    Re_Xferred = Re_Xferred + 1
+    ReKiBuf(Re_Xferred) = InData%threshIC
+    Re_Xferred = Re_Xferred + 1
+  IF ( .NOT. ALLOCATED(InData%OutList) ) THEN
+    IntKiBuf( Int_Xferred ) = 0
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    IntKiBuf( Int_Xferred ) = 1
+    Int_Xferred = Int_Xferred + 1
+    IntKiBuf( Int_Xferred    ) = LBOUND(InData%OutList,1)
+    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%OutList,1)
+    Int_Xferred = Int_Xferred + 2
+
+      DO i1 = LBOUND(InData%OutList,1), UBOUND(InData%OutList,1)
+        DO I = 1, LEN(InData%OutList)
+          IntKiBuf(Int_Xferred) = ICHAR(InData%OutList(i1)(I:I), IntKi)
+          Int_Xferred = Int_Xferred + 1
+        END DO ! I
+      END DO
+  END IF
+    IntKiBuf(Int_Xferred) = InData%NumOuts
+    Int_Xferred = Int_Xferred + 1
+ END SUBROUTINE MD_PackInputData
+
+ SUBROUTINE MD_UnPackInputData( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
+  REAL(ReKi),      ALLOCATABLE, INTENT(IN   ) :: ReKiBuf(:)
+  REAL(DbKi),      ALLOCATABLE, INTENT(IN   ) :: DbKiBuf(:)
+  INTEGER(IntKi),  ALLOCATABLE, INTENT(IN   ) :: IntKiBuf(:)
+  TYPE(MD_InputData), INTENT(INOUT) :: OutData
+  INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
+  CHARACTER(*),    INTENT(  OUT) :: ErrMsg
+    ! Local variables
+  INTEGER(IntKi)                 :: Buf_size
+  INTEGER(IntKi)                 :: Re_Xferred
+  INTEGER(IntKi)                 :: Db_Xferred
+  INTEGER(IntKi)                 :: Int_Xferred
+  INTEGER(IntKi)                 :: i
+  INTEGER(IntKi)                 :: i1, i1_l, i1_u  !  bounds (upper/lower) for an array dimension 1
+  INTEGER(IntKi)                 :: i2, i2_l, i2_u  !  bounds (upper/lower) for an array dimension 2
+  INTEGER(IntKi)                 :: i3, i3_l, i3_u  !  bounds (upper/lower) for an array dimension 3
+  INTEGER(IntKi)                 :: ErrStat2
+  CHARACTER(ErrMsgLen)           :: ErrMsg2
+  CHARACTER(*), PARAMETER        :: RoutineName = 'MD_UnPackInputData'
+ ! buffers to store meshes, if any
+  REAL(ReKi),      ALLOCATABLE   :: Re_Buf(:)
+  REAL(DbKi),      ALLOCATABLE   :: Db_Buf(:)
+  INTEGER(IntKi),  ALLOCATABLE   :: Int_Buf(:)
+    !
+  ErrStat = ErrID_None
+  ErrMsg  = ""
+  Re_Xferred  = 1
+  Db_Xferred  = 1
+  Int_Xferred  = 1
+    OutData%Echo = TRANSFER(IntKiBuf(Int_Xferred), OutData%Echo)
+    Int_Xferred = Int_Xferred + 1
+    OutData%NTypes = IntKiBuf(Int_Xferred)
+    Int_Xferred = Int_Xferred + 1
+  IF ( IntKiBuf( Int_Xferred ) == 0 ) THEN  ! LineTypes not allocated
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    Int_Xferred = Int_Xferred + 1
+    i1_l = IntKiBuf( Int_Xferred    )
+    i1_u = IntKiBuf( Int_Xferred + 1)
+    Int_Xferred = Int_Xferred + 2
+    i2_l = IntKiBuf( Int_Xferred    )
+    i2_u = IntKiBuf( Int_Xferred + 1)
+    Int_Xferred = Int_Xferred + 2
+    IF (ALLOCATED(OutData%LineTypes)) DEALLOCATE(OutData%LineTypes)
+    ALLOCATE(OutData%LineTypes(i1_l:i1_u,i2_l:i2_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating OutData%LineTypes.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+      DO i2 = LBOUND(OutData%LineTypes,2), UBOUND(OutData%LineTypes,2)
+        DO i1 = LBOUND(OutData%LineTypes,1), UBOUND(OutData%LineTypes,1)
+          DO I = 1, LEN(OutData%LineTypes)
+            OutData%LineTypes(i1,i2)(I:I) = CHAR(IntKiBuf(Int_Xferred))
+            Int_Xferred = Int_Xferred + 1
+          END DO ! I
+        END DO
+      END DO
+  END IF
+    OutData%NConnects = IntKiBuf(Int_Xferred)
+    Int_Xferred = Int_Xferred + 1
+  IF ( IntKiBuf( Int_Xferred ) == 0 ) THEN  ! Connections not allocated
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    Int_Xferred = Int_Xferred + 1
+    i1_l = IntKiBuf( Int_Xferred    )
+    i1_u = IntKiBuf( Int_Xferred + 1)
+    Int_Xferred = Int_Xferred + 2
+    i2_l = IntKiBuf( Int_Xferred    )
+    i2_u = IntKiBuf( Int_Xferred + 1)
+    Int_Xferred = Int_Xferred + 2
+    IF (ALLOCATED(OutData%Connections)) DEALLOCATE(OutData%Connections)
+    ALLOCATE(OutData%Connections(i1_l:i1_u,i2_l:i2_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating OutData%Connections.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+      DO i2 = LBOUND(OutData%Connections,2), UBOUND(OutData%Connections,2)
+        DO i1 = LBOUND(OutData%Connections,1), UBOUND(OutData%Connections,1)
+          DO I = 1, LEN(OutData%Connections)
+            OutData%Connections(i1,i2)(I:I) = CHAR(IntKiBuf(Int_Xferred))
+            Int_Xferred = Int_Xferred + 1
+          END DO ! I
+        END DO
+      END DO
+  END IF
+    OutData%NLines = IntKiBuf(Int_Xferred)
+    Int_Xferred = Int_Xferred + 1
+  IF ( IntKiBuf( Int_Xferred ) == 0 ) THEN  ! Lines not allocated
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    Int_Xferred = Int_Xferred + 1
+    i1_l = IntKiBuf( Int_Xferred    )
+    i1_u = IntKiBuf( Int_Xferred + 1)
+    Int_Xferred = Int_Xferred + 2
+    i2_l = IntKiBuf( Int_Xferred    )
+    i2_u = IntKiBuf( Int_Xferred + 1)
+    Int_Xferred = Int_Xferred + 2
+    IF (ALLOCATED(OutData%Lines)) DEALLOCATE(OutData%Lines)
+    ALLOCATE(OutData%Lines(i1_l:i1_u,i2_l:i2_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating OutData%Lines.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+      DO i2 = LBOUND(OutData%Lines,2), UBOUND(OutData%Lines,2)
+        DO i1 = LBOUND(OutData%Lines,1), UBOUND(OutData%Lines,1)
+          DO I = 1, LEN(OutData%Lines)
+            OutData%Lines(i1,i2)(I:I) = CHAR(IntKiBuf(Int_Xferred))
+            Int_Xferred = Int_Xferred + 1
+          END DO ! I
+        END DO
+      END DO
+  END IF
+    OutData%dtM = ReKiBuf(Re_Xferred)
+    Re_Xferred = Re_Xferred + 1
+    OutData%g = ReKiBuf(Re_Xferred)
+    Re_Xferred = Re_Xferred + 1
+    OutData%rhoW = ReKiBuf(Re_Xferred)
+    Re_Xferred = Re_Xferred + 1
+    OutData%WtrDpth = ReKiBuf(Re_Xferred)
+    Re_Xferred = Re_Xferred + 1
+    OutData%kbot = ReKiBuf(Re_Xferred)
+    Re_Xferred = Re_Xferred + 1
+    OutData%cbot = ReKiBuf(Re_Xferred)
+    Re_Xferred = Re_Xferred + 1
+    OutData%dtIC = ReKiBuf(Re_Xferred)
+    Re_Xferred = Re_Xferred + 1
+    OutData%TmaxIC = ReKiBuf(Re_Xferred)
+    Re_Xferred = Re_Xferred + 1
+    OutData%CdScaleIC = ReKiBuf(Re_Xferred)
+    Re_Xferred = Re_Xferred + 1
+    OutData%threshIC = ReKiBuf(Re_Xferred)
+    Re_Xferred = Re_Xferred + 1
+  IF ( IntKiBuf( Int_Xferred ) == 0 ) THEN  ! OutList not allocated
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    Int_Xferred = Int_Xferred + 1
+    i1_l = IntKiBuf( Int_Xferred    )
+    i1_u = IntKiBuf( Int_Xferred + 1)
+    Int_Xferred = Int_Xferred + 2
+    IF (ALLOCATED(OutData%OutList)) DEALLOCATE(OutData%OutList)
+    ALLOCATE(OutData%OutList(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating OutData%OutList.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+      DO i1 = LBOUND(OutData%OutList,1), UBOUND(OutData%OutList,1)
+        DO I = 1, LEN(OutData%OutList)
+          OutData%OutList(i1)(I:I) = CHAR(IntKiBuf(Int_Xferred))
+          Int_Xferred = Int_Xferred + 1
+        END DO ! I
+      END DO
+  END IF
+    OutData%NumOuts = IntKiBuf(Int_Xferred)
+    Int_Xferred = Int_Xferred + 1
+ END SUBROUTINE MD_UnPackInputData
+
  SUBROUTINE MD_CopyInitInput( SrcInitInputData, DstInitInputData, CtrlCode, ErrStat, ErrMsg )
    TYPE(MD_InitInputType), INTENT(IN) :: SrcInitInputData
    TYPE(MD_InitInputType), INTENT(INOUT) :: DstInitInputData
@@ -211,8 +715,6 @@ CONTAINS
 ! Local 
    INTEGER(IntKi)                 :: i,j,k
    INTEGER(IntKi)                 :: i1, i1_l, i1_u  !  bounds (upper/lower) for an array dimension 1
-   INTEGER(IntKi)                 :: i2, i2_l, i2_u  !  bounds (upper/lower) for an array dimension 2
-   INTEGER(IntKi)                 :: i3, i3_l, i3_u  !  bounds (upper/lower) for an array dimension 3
    INTEGER(IntKi)                 :: ErrStat2
    CHARACTER(ErrMsgLen)           :: ErrMsg2
    CHARACTER(*), PARAMETER        :: RoutineName = 'MD_CopyInitInput'
@@ -242,6 +744,10 @@ IF (ALLOCATED(SrcInitInputData%OutList)) THEN
   END IF
     DstInitInputData%OutList = SrcInitInputData%OutList
 ENDIF
+    DstInitInputData%UseInputFile = SrcInitInputData%UseInputFile
+      CALL NWTC_Library_Copyfileinfotype( SrcInitInputData%PassedInputData, DstInitInputData%PassedInputData, CtrlCode, ErrStat2, ErrMsg2 )
+         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
+         IF (ErrStat>=AbortErrLev) RETURN
  END SUBROUTINE MD_CopyInitInput
 
  SUBROUTINE MD_DestroyInitInput( InitInputData, ErrStat, ErrMsg )
@@ -256,6 +762,7 @@ ENDIF
 IF (ALLOCATED(InitInputData%OutList)) THEN
   DEALLOCATE(InitInputData%OutList)
 ENDIF
+  CALL NWTC_Library_Destroyfileinfotype( InitInputData%PassedInputData, ErrStat, ErrMsg )
  END SUBROUTINE MD_DestroyInitInput
 
  SUBROUTINE MD_PackInitInput( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
@@ -309,6 +816,25 @@ ENDIF
     Int_BufSz   = Int_BufSz   + 2*1  ! OutList upper/lower bounds for each dimension
       Int_BufSz  = Int_BufSz  + SIZE(InData%OutList)*LEN(InData%OutList)  ! OutList
   END IF
+      Int_BufSz  = Int_BufSz  + 1  ! UseInputFile
+   ! Allocate buffers for subtypes, if any (we'll get sizes from these) 
+      Int_BufSz   = Int_BufSz + 3  ! PassedInputData: size of buffers for each call to pack subtype
+      CALL NWTC_Library_Packfileinfotype( Re_Buf, Db_Buf, Int_Buf, InData%PassedInputData, ErrStat2, ErrMsg2, .TRUE. ) ! PassedInputData 
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
+        IF (ErrStat >= AbortErrLev) RETURN
+
+      IF(ALLOCATED(Re_Buf)) THEN ! PassedInputData
+         Re_BufSz  = Re_BufSz  + SIZE( Re_Buf  )
+         DEALLOCATE(Re_Buf)
+      END IF
+      IF(ALLOCATED(Db_Buf)) THEN ! PassedInputData
+         Db_BufSz  = Db_BufSz  + SIZE( Db_Buf  )
+         DEALLOCATE(Db_Buf)
+      END IF
+      IF(ALLOCATED(Int_Buf)) THEN ! PassedInputData
+         Int_BufSz = Int_BufSz + SIZE( Int_Buf )
+         DEALLOCATE(Int_Buf)
+      END IF
   IF ( Re_BufSz  .GT. 0 ) THEN 
      ALLOCATE( ReKiBuf(  Re_BufSz  ), STAT=ErrStat2 )
      IF (ErrStat2 /= 0) THEN 
@@ -381,6 +907,36 @@ ENDIF
         END DO ! I
       END DO
   END IF
+    IntKiBuf(Int_Xferred) = TRANSFER(InData%UseInputFile, IntKiBuf(1))
+    Int_Xferred = Int_Xferred + 1
+      CALL NWTC_Library_Packfileinfotype( Re_Buf, Db_Buf, Int_Buf, InData%PassedInputData, ErrStat2, ErrMsg2, OnlySize ) ! PassedInputData 
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
+        IF (ErrStat >= AbortErrLev) RETURN
+
+      IF(ALLOCATED(Re_Buf)) THEN
+        IntKiBuf( Int_Xferred ) = SIZE(Re_Buf); Int_Xferred = Int_Xferred + 1
+        IF (SIZE(Re_Buf) > 0) ReKiBuf( Re_Xferred:Re_Xferred+SIZE(Re_Buf)-1 ) = Re_Buf
+        Re_Xferred = Re_Xferred + SIZE(Re_Buf)
+        DEALLOCATE(Re_Buf)
+      ELSE
+        IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
+      ENDIF
+      IF(ALLOCATED(Db_Buf)) THEN
+        IntKiBuf( Int_Xferred ) = SIZE(Db_Buf); Int_Xferred = Int_Xferred + 1
+        IF (SIZE(Db_Buf) > 0) DbKiBuf( Db_Xferred:Db_Xferred+SIZE(Db_Buf)-1 ) = Db_Buf
+        Db_Xferred = Db_Xferred + SIZE(Db_Buf)
+        DEALLOCATE(Db_Buf)
+      ELSE
+        IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
+      ENDIF
+      IF(ALLOCATED(Int_Buf)) THEN
+        IntKiBuf( Int_Xferred ) = SIZE(Int_Buf); Int_Xferred = Int_Xferred + 1
+        IF (SIZE(Int_Buf) > 0) IntKiBuf( Int_Xferred:Int_Xferred+SIZE(Int_Buf)-1 ) = Int_Buf
+        Int_Xferred = Int_Xferred + SIZE(Int_Buf)
+        DEALLOCATE(Int_Buf)
+      ELSE
+        IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
+      ENDIF
  END SUBROUTINE MD_PackInitInput
 
  SUBROUTINE MD_UnPackInitInput( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
@@ -397,8 +953,6 @@ ENDIF
   INTEGER(IntKi)                 :: Int_Xferred
   INTEGER(IntKi)                 :: i
   INTEGER(IntKi)                 :: i1, i1_l, i1_u  !  bounds (upper/lower) for an array dimension 1
-  INTEGER(IntKi)                 :: i2, i2_l, i2_u  !  bounds (upper/lower) for an array dimension 2
-  INTEGER(IntKi)                 :: i3, i3_l, i3_u  !  bounds (upper/lower) for an array dimension 3
   INTEGER(IntKi)                 :: ErrStat2
   CHARACTER(ErrMsgLen)           :: ErrMsg2
   CHARACTER(*), PARAMETER        :: RoutineName = 'MD_UnPackInitInput'
@@ -462,6 +1016,48 @@ ENDIF
         END DO ! I
       END DO
   END IF
+    OutData%UseInputFile = TRANSFER(IntKiBuf(Int_Xferred), OutData%UseInputFile)
+    Int_Xferred = Int_Xferred + 1
+      Buf_size=IntKiBuf( Int_Xferred )
+      Int_Xferred = Int_Xferred + 1
+      IF(Buf_size > 0) THEN
+        ALLOCATE(Re_Buf(Buf_size),STAT=ErrStat2)
+        IF (ErrStat2 /= 0) THEN 
+           CALL SetErrStat(ErrID_Fatal, 'Error allocating Re_Buf.', ErrStat, ErrMsg,RoutineName)
+           RETURN
+        END IF
+        Re_Buf = ReKiBuf( Re_Xferred:Re_Xferred+Buf_size-1 )
+        Re_Xferred = Re_Xferred + Buf_size
+      END IF
+      Buf_size=IntKiBuf( Int_Xferred )
+      Int_Xferred = Int_Xferred + 1
+      IF(Buf_size > 0) THEN
+        ALLOCATE(Db_Buf(Buf_size),STAT=ErrStat2)
+        IF (ErrStat2 /= 0) THEN 
+           CALL SetErrStat(ErrID_Fatal, 'Error allocating Db_Buf.', ErrStat, ErrMsg,RoutineName)
+           RETURN
+        END IF
+        Db_Buf = DbKiBuf( Db_Xferred:Db_Xferred+Buf_size-1 )
+        Db_Xferred = Db_Xferred + Buf_size
+      END IF
+      Buf_size=IntKiBuf( Int_Xferred )
+      Int_Xferred = Int_Xferred + 1
+      IF(Buf_size > 0) THEN
+        ALLOCATE(Int_Buf(Buf_size),STAT=ErrStat2)
+        IF (ErrStat2 /= 0) THEN 
+           CALL SetErrStat(ErrID_Fatal, 'Error allocating Int_Buf.', ErrStat, ErrMsg,RoutineName)
+           RETURN
+        END IF
+        Int_Buf = IntKiBuf( Int_Xferred:Int_Xferred+Buf_size-1 )
+        Int_Xferred = Int_Xferred + Buf_size
+      END IF
+      CALL NWTC_Library_Unpackfileinfotype( Re_Buf, Db_Buf, Int_Buf, OutData%PassedInputData, ErrStat2, ErrMsg2 ) ! PassedInputData 
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
+        IF (ErrStat >= AbortErrLev) RETURN
+
+      IF(ALLOCATED(Re_Buf )) DEALLOCATE(Re_Buf )
+      IF(ALLOCATED(Db_Buf )) DEALLOCATE(Db_Buf )
+      IF(ALLOCATED(Int_Buf)) DEALLOCATE(Int_Buf)
  END SUBROUTINE MD_UnPackInitInput
 
  SUBROUTINE MD_CopyLineProp( SrcLinePropData, DstLinePropData, CtrlCode, ErrStat, ErrMsg )

@@ -71,11 +71,15 @@ CONTAINS
       INTEGER(IntKi)                               :: ErrStat2       ! Error status of the operation
       CHARACTER(ErrMsgLen)                         :: ErrMsg2        ! Error message if ErrStat2 /= ErrID_None
       
+      INTEGER(IntKi) :: EchoUnit      
+      type(FileInfoType)                           :: InFileInfo
+
       TYPE(MD_InputType)    :: uArray(1)    ! a size-one array for u to make call to TimeStep happy
       REAL(DbKi)            :: utimes(1)    ! a size-one array saying time is 0 to make call to TimeStep happy  
 
       CHARACTER(MaxWrScrLen)                       :: Message
 
+      TYPE(MD_InputData) :: InputData
 
       ErrStat = ErrID_None
       ErrMsg  = ""
@@ -96,23 +100,52 @@ CONTAINS
       ! set environmental parameters from input data and error check
       ! (should remove these values as options from MoorDyn input file for consistency?)
 
+      ! RAF-TODO: Verify this wont be overwritten if provided in the input data
       p%g        = InitInp%g
       p%WtrDpth  = InitInp%WtrDepth
       p%rhoW     = InitInp%rhoW
 
       p%RootName = TRIM(InitInp%RootName)//'.MD'  ! all files written from this module will have this root name
 
+      IF ( InitInp%UseInputFile ) THEN
+         ! Read the input file and store in local variable as array of strings
+         call ProcessComFile( InitInp%FileName, InFileInfo, ErrStat2, ErrMsg2 )
+      ELSE
+         InFileInfo = InitInp%PassedInputData
+      ENDIF
 
-      ! call function that reads input file and creates cross-referenced Connect and Line objects
-      CALL MDIO_ReadInput(InitInp, p, m, ErrStat2, ErrMsg2)
+      CALL MDIO_ParseInputFileInfo( InFileInfo, TRIM(p%RootName)//'.ech', InputData, ErrStat2, ErrMsg2 )
          CALL CheckError( ErrStat2, ErrMsg2 )
          IF (ErrStat >= AbortErrLev) RETURN
+
+      CALL MDIO_ValidateInputData(InputData, ErrStat2, ErrMsg2)
+         CALL CheckError( ErrStat2, ErrMsg2 )
+         IF (ErrStat >= AbortErrLev) RETURN
+
+         ! Copy InputData to InitInput
+      CALL MDIO_ConstructInitData(InputData, InitInp)
+
+         ! populates m
+      CALL MD_ConstructConnectionLineObjects(InputData, m, ErrStat2, ErrMsg2)
+         CALL CheckError( ErrStat2, ErrMsg2 )
+         IF (ErrStat >= AbortErrLev) RETURN
+
+         ! populate p
+      ! CALL MD_SetParameters(InputData, p)
+      p%NTypes = InputData%NTypes
+      p%NConnects = InputData%NConnects
+      p%NLines = InputData%NLines
+      p%dtM0 = InputData%dtM
+      p%G = InputData%G
+      p%rhoW = InputData%rhoW
+      p%WtrDpth = InputData%WtrDpth
+      p%kBot = InputData%kBot
+      p%cBot = InputData%cBot
 
       ! process the OutList array and set up the index arrays for the requested output quantities
       CALL MDIO_ProcessOutList(InitInp%OutList, p, m, y, InitOut, ErrStat2, ErrMsg2 )
          CALL CheckError( ErrStat2, ErrMsg2 )
          IF (ErrStat >= AbortErrLev) RETURN
-
 
       !-------------------------------------------------------------------------------------------------
       !          Connect mooring system together and make necessary allocations
@@ -1283,9 +1316,104 @@ CONTAINS
 
    END SUBROUTINE TimeStep
    !======================================================================
+   SUBROUTINE MD_ConstructConnectionLineObjects(InputData, m, ErrStat, ErrMsg)
+      TYPE(MD_InputData), INTENT(IN) :: InputData
+      TYPE(MD_MiscVarType), INTENT(OUT) :: m
+      INTEGER, INTENT(OUT) :: ErrStat
+      CHARACTER(*), INTENT(OUT) :: ErrMsg
 
+      INTEGER :: I, J
+      CHARACTER(20) :: LineOutString        ! String to temporarially hold characters specifying line output options
 
+      CHARACTER(*), PARAMETER :: RoutineName = "MD_ConstructConnectionLineObjects"
 
+         ! create cross-referenced Connect and Line objects
+
+      allocate(m%LineTypeList(InputData%NTypes))
+      DO I = 1, InputData%NTypes
+         m%LineTypeList(I)%name = InputData%LineTypes(I,1)
+         read(InputData%LineTypes(I,2), *) m%LineTypeList(I)%d
+         read(InputData%LineTypes(I,3), *) m%LineTypeList(I)%w
+         read(InputData%LineTypes(I,4), *) m%LineTypeList(I)%EA
+         read(InputData%LineTypes(I,5), *) m%LineTypeList(I)%BA
+         read(InputData%LineTypes(I,6), *) m%LineTypeList(I)%Can
+         read(InputData%LineTypes(I,7), *) m%LineTypeList(I)%Cat
+         read(InputData%LineTypes(I,8), *) m%LineTypeList(I)%Cdn
+         read(InputData%LineTypes(I,9), *) m%LineTypeList(I)%Cdt
+         m%LineTypeList(I)%IdNum = I  ! specify IdNum of line type for error checking
+      END DO
+
+      allocate(m%ConnectList(InputData%NConnects))
+      DO I = 1, InputData%NConnects
+         read(InputData%Connections(I,1), *) m%ConnectList(I)%IdNum
+         m%ConnectList(I)%type = InputData%Connections(I,2)
+         read(InputData%Connections(I,3), *) m%ConnectList(I)%conX
+         read(InputData%Connections(I,4), *) m%ConnectList(I)%conY
+         read(InputData%Connections(I,5), *) m%ConnectList(I)%conZ
+         read(InputData%Connections(I,6), *) m%ConnectList(I)%conM
+         read(InputData%Connections(I,7), *) m%ConnectList(I)%conV
+         read(InputData%Connections(I,8), *) m%ConnectList(I)%conFX
+         read(InputData%Connections(I,9), *) m%ConnectList(I)%conFY
+         read(InputData%Connections(I,10), *) m%ConnectList(I)%conFZ
+         read(InputData%Connections(I,11), *) m%ConnectList(I)%conCdA
+         read(InputData%Connections(I,12), *) m%ConnectList(I)%conCa
+
+            ! check for sequential IdNums
+         IF ( m%ConnectList(I)%IdNum .NE. I ) THEN
+            CALL SetErrStat( ErrID_Fatal, 'Node numbers must be sequential starting from 1.', ErrStat, ErrMsg, RoutineName )
+            RETURN
+         END IF
+      END DO
+
+      allocate(m%LineList(InputData%NLines))
+      DO I = 1,InputData%NLines
+         read(InputData%Lines(I,1), *) m%LineList(I)%IdNum
+         m%LineList(I)%type = InputData%Lines(I,2)
+         read(InputData%Lines(I,3), *) m%LineList(I)%UnstrLen
+         read(InputData%Lines(I,4), *) m%LineList(I)%N
+         read(InputData%Lines(I,5), *) m%LineList(I)%AnchConnect
+         read(InputData%Lines(I,6), *) m%LineList(I)%FairConnect
+         LineOutString = InputData%Lines(I,7)
+
+         ! check for sequential IdNums
+         IF ( m%LineList(I)%IdNum .NE. I ) THEN
+            CALL SetErrStat( ErrID_Fatal, 'Line numbers must be sequential starting from 1.', ErrStat, ErrMsg, RoutineName )
+            RETURN
+         END IF
+
+         ! identify index of line type
+         DO J = 1, InputData%NTypes
+            IF (trim(m%LineList(I)%type) == trim(m%LineTypeList(J)%name)) THEN
+               m%LineList(I)%PropsIdNum = J
+               EXIT
+               IF (J == InputData%NTypes) THEN   ! call an error if there is no match
+                  CALL SetErrStat( ErrID_Severe, 'Unable to find matching line type name for Line '//trim(Num2LStr(I)), ErrStat, ErrMsg, RoutineName )
+               END IF
+            END IF
+         END DO
+         
+         ! process output flag characters (LineOutString) and set line output flag array (OutFlagList)
+         m%LineList(I)%OutFlagList = 0  ! first set array all to zero
+         IF ( scan( LineOutString, 'p') > 0 )  m%LineList(I)%OutFlagList(2) = 1 
+         IF ( scan( LineOutString, 'v') > 0 )  m%LineList(I)%OutFlagList(3) = 1
+         IF ( scan( LineOutString, 'U') > 0 )  m%LineList(I)%OutFlagList(4) = 1
+         IF ( scan( LineOutString, 'D') > 0 )  m%LineList(I)%OutFlagList(5) = 1
+         IF ( scan( LineOutString, 't') > 0 )  m%LineList(I)%OutFlagList(6) = 1
+         IF ( scan( LineOutString, 'c') > 0 )  m%LineList(I)%OutFlagList(7) = 1
+         IF ( scan( LineOutString, 's') > 0 )  m%LineList(I)%OutFlagList(8) = 1
+         IF ( scan( LineOutString, 'd') > 0 )  m%LineList(I)%OutFlagList(9) = 1
+         IF (SUM(m%LineList(I)%OutFlagList) > 0)   m%LineList(I)%OutFlagList(1) = 1  ! this first entry signals whether to create any output file at all
+         ! the above letter-index combinations define which OutFlagList entry corresponds to which output type
+
+         ! check errors
+         IF ( ErrStat /= ErrID_None ) THEN
+            ErrMsg  = ' Failed to read line data for Line '//trim(Num2LStr(I))
+            RETURN
+         END IF
+
+      END DO
+      
+   END SUBROUTINE
    !=======================================================================
    SUBROUTINE SetupLine (Line, LineProp, rhoW, ErrStat, ErrMsg)
       ! calculate initial profile of the line using quasi-static model

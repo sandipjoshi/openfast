@@ -81,23 +81,18 @@ MODULE MoorDyn_IO
 
   ! ---------------------------------------------------------------------------------------------------------
 
-
-
-
-   PUBLIC :: MDIO_ReadInput
+   PUBLIC :: MDIO_ParseInputFileInfo
+   PUBLIC :: MDIO_ValidateInputData
+   PUBLIC :: MDIO_ConstructInitData
    PUBLIC :: MDIO_OpenOutput
    PUBLIC :: MDIO_CloseOutput
    PUBLIC :: MDIO_ProcessOutList
    PUBLIC :: MDIO_WriteOutputs
 
-
 CONTAINS
 
-
-
-
-   !====================================================================================================
-   SUBROUTINE MDIO_ReadInput( InitInp, p, m, ErrStat, ErrMsg )
+!====================================================================================================
+SUBROUTINE MDIO_ParseInputFileInfo( InFileInfo, EchoFileName, InputData, ErrStat, ErrMsg )
 
    ! This subroutine reads the input required for MoorDyn from the file whose name is an
    ! input parameter.  It sets the size of p%NTypes, NConnects, and NLines,
@@ -105,253 +100,136 @@ CONTAINS
    ! the input file into the respective slots in those lists of types.
 
 
-    ! Passed variables
-
-    TYPE(MD_InitInputType),       INTENT( INOUT )   :: InitInp              ! the MoorDyn data
-    TYPE(MD_ParameterType),       INTENT(INOUT)     :: p                    ! Parameters
-    TYPE(MD_MiscVarType),         INTENT(  OUT)     :: m                    ! INTENT( OUT) : Initial misc/optimization vars
-    INTEGER,                      INTENT(   OUT )   :: ErrStat              ! returns a non-zero value when an error occurs
-    CHARACTER(*),                 INTENT(   OUT )   :: ErrMsg               ! Error message if ErrStat /= ErrID_None
-
+      ! Passed variables
+    TYPE(FileInfoType), INTENT(IN   )  :: InFileInfo             !< name of the input file
+    CHARACTER(*), INTENT(IN)           :: EchoFileName
+    TYPE(MD_InputData), INTENT(  OUT)  :: InputData            !< The data for initialization
+    INTEGER,            INTENT(  OUT)  :: ErrStat              !< Returned error status  from this subroutine
+    CHARACTER(*),       INTENT(  OUT)  :: ErrMsg               !< Returned error message from this subroutine
 
     ! Local variables
 
-    INTEGER                      :: I                    ! generic integer for counting
-    INTEGER                      :: J                    ! generic integer for counting
+    INTEGER                      :: I, J                 ! generic integer for counting
     INTEGER                      :: UnIn                 ! Unit number for the input file
-    INTEGER                      :: UnEc                 ! The local unit number for this module's echo file
-    CHARACTER(1024)              :: EchoFile             ! Name of MoorDyn echo file
+    INTEGER                      :: EchoUnit             ! The local unit number for this module's echo file
     CHARACTER(1024)              :: Line                 ! String to temporarially hold value of read line
-    CHARACTER(20)                :: LineOutString        ! String to temporarially hold characters specifying line output options
     CHARACTER(20)                :: OptString            ! String to temporarially hold name of option variable
     CHARACTER(20)                :: OptValue             ! String to temporarially hold value of options variable input
-    CHARACTER(1024)              :: FileName             !
 
     INTEGER(IntKi)               :: ErrStat2
     CHARACTER(ErrMsgLen)         :: ErrMsg2
-    CHARACTER(*), PARAMETER      :: RoutineName = 'MDIO_ReadInput'
-    
-    
-    !
-    UnEc = -1
+    CHARACTER(*), PARAMETER      :: RoutineName = 'MDIO_ParseInputFile'
 
-    ! Initialize ErrStat
+    INTEGER :: LineNumber
+
+    CHARACTER(1024), DIMENSION(:), ALLOCATABLE :: array_temp
+
     ErrStat = ErrID_None
-    ErrMsg  = ""
-
-    !-------------------------------------------------------------------------------------------------
-    ! Open the file
-    !-------------------------------------------------------------------------------------------------
-    FileName = TRIM(InitInp%FileName)
-
-    CALL GetNewUnit( UnIn )
-    CALL OpenFInpFile( UnIn, FileName, ErrStat2, ErrMsg2 )
-      CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-       IF ( ErrStat >= AbortErrLev ) THEN
-          CALL CleanUp()
-          RETURN
-       END IF
-
-
-    !CALL WrScr( '  MD_Init: Opening MoorDyn input file:  '//FileName )
-
+    ErrMsg = ""
+    LineNumber = 0
+    EchoUnit = -1
 
     !-------------------------------------------------------------------------------------------------
     ! File header
     !-------------------------------------------------------------------------------------------------
+    LineNumber = LineNumber + 1
+   !  CALL ReadCom( UnIn, FileName, 'MoorDyn input file header line 1', ErrStat2, ErrMsg2 )
 
-    CALL ReadCom( UnIn, FileName, 'MoorDyn input file header line 1', ErrStat2, ErrMsg2 )
+    LineNumber = LineNumber + 1
+   !  CALL ReadCom( UnIn, FileName, 'MoorDyn input file header line 2', ErrStat2, ErrMsg2 )
+
+    LineNumber = LineNumber + 1
+    CALL ParseVar ( InFileInfo, LineNumber, 'Echo', InputData%Echo, ErrStat2, ErrMsg2 )
       CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
        IF ( ErrStat >= AbortErrLev ) THEN
           CALL CleanUp()
           RETURN
        END IF
 
+    IF ( InputData%Echo ) THEN
+       ! Open the echo file and get the unit
+       CALL OpenEcho ( EchoUnit, TRIM(EchoFileName), ErrStat2, ErrMsg2 )
+       ! if (Failed()) return;
 
-    CALL ReadCom( UnIn, FileName, 'MoorDyn input file header line 2', ErrStat2, ErrMsg2 )
-      CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-       IF ( ErrStat >= AbortErrLev ) THEN
-          CALL CleanUp()
-          RETURN
+       ! Use the NWTC routines for the copyright and header info?
+      !  WRITE(EchoUnit, '(A)') 'Echo file for MoorDyn input file: '!//trim(InputFile)
+       ! Write the first three lines into the echo file
+       DO I=1,LineNumber-1
+          WRITE(EchoUnit, '(A)') InFileInfo%Lines(I)
+       END DO
+
        END IF
-
-
-    ! Echo Input Files.
-    CALL ReadVar ( UnIn, FileName, InitInp%Echo, 'Echo', 'Echo Input', ErrStat2, ErrMsg2 )
-      CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-       IF ( ErrStat >= AbortErrLev ) THEN
-          CALL CleanUp()
-          RETURN
-       END IF
-
-
-    ! If we are Echoing the input then we should re-read the first three lines so that we can echo them
-    ! using the NWTC_Library routines.  The echoing is done inside those routines via a global variable
-    ! which we must store, set, and then replace on error or completion.
-
-      IF ( InitInp%Echo ) THEN
-
-         !print *, 'gonna try to open echo file'
-
-         EchoFile = TRIM(p%RootName)//'.ech'                      ! open an echo file for writing
-
-         !print *, 'name is ', EchoFile
-
-         CALL GetNewUnit( UnEc )
-         CALL OpenEcho ( UnEc, EchoFile, ErrStat2, ErrMsg2 )
-            CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-            IF ( ErrStat >= AbortErrLev ) THEN
-               CALL CleanUp()
-               RETURN
-            END IF
-
-         REWIND(UnIn)      ! rewind to start of input file to re-read the first few lines
-
-
-
-
-       CALL ReadCom( UnIn, FileName, 'MoorDyn input file header line 1', ErrStat2, ErrMsg2, UnEc )
-          CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-          IF ( ErrStat >= AbortErrLev ) THEN
-             CALL CleanUp()
-             RETURN
-          END IF
-
-       CALL ReadCom( UnIn, FileName, 'MoorDyn input file header line 2', ErrStat2, ErrMsg2, UnEc )
-          CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-          IF ( ErrStat >= AbortErrLev ) THEN
-             CALL CleanUp()
-             RETURN
-          END IF
-
-
-       ! Echo Input Files. Note this line is prevented from being echoed by the ReadVar routine.
-       CALL ReadVar ( UnIn, FileName, InitInp%Echo, 'Echo', 'Echo the input file data', ErrStat2, ErrMsg2, UnEc )
-          CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-          IF ( ErrStat >= AbortErrLev ) THEN
-             CALL CleanUp()
-             RETURN
-          END IF
-
-      !print *, 'at end of echo if statement'
-
-    END IF
-
-   !print *, 'past echo bit'
-
 
     !-------------------------------------------------------------------------------------------------
     !  Line Types Properties Section
     !-------------------------------------------------------------------------------------------------
+    IF ( InputData%Echo ) WRITE(EchoUnit, '(A)') InFileInfo%Lines(LineNumber)
+   !  CALL ReadCom( UnIn, FileName, 'Line types header', ErrStat2, ErrMsg2, UnEc )
+    LineNumber = LineNumber + 1
 
-    CALL ReadCom( UnIn, FileName, 'Line types header', ErrStat2, ErrMsg2, UnEc )
+    CALL ParseVar ( InFileInfo, LineNumber, 'NTypes', InputData%NTypes, ErrStat2, ErrMsg2, EchoUnit )
           CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
           IF ( ErrStat >= AbortErrLev ) THEN
              CALL CleanUp()
              RETURN
           END IF
 
+   !  DO I = 1, 2
+   !     CALL ReadCom( UnIn, FileName, 'Line types table header', ErrStat2, ErrMsg2, UnEc )
+   !  END DO
+    IF ( InputData%Echo ) WRITE(EchoUnit, '(A)') InFileInfo%Lines(LineNumber)
+    LineNumber = LineNumber + 1
+    IF ( InputData%Echo ) WRITE(EchoUnit, '(A)') InFileInfo%Lines(LineNumber)
+    LineNumber = LineNumber + 1
 
-    CALL ReadVar ( UnIn, FileName, p%NTypes, 'NTypes', 'Number of line types', ErrStat2, ErrMsg2, UnEc )
-          CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-          IF ( ErrStat >= AbortErrLev ) THEN
-             CALL CleanUp()
-             RETURN
-          END IF
-
-
-    ! Table header
-    DO I = 1, 2
-       CALL ReadCom( UnIn, FileName, 'Line types table header', ErrStat2, ErrMsg2, UnEc )
-          CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-          IF ( ErrStat >= AbortErrLev ) THEN
-             CALL CleanUp()
-             RETURN
-          END IF
-    END DO
-
-    ! make sure NTypes isn't zero
-    IF ( p%NTypes < 1 ) THEN
-       CALL SetErrStat( ErrID_Fatal, 'NTypes parameter must be greater than zero.', ErrStat, ErrMsg, RoutineName )
-       CALL CleanUp()
-       RETURN
-    END IF
-
-    ! Allocate memory for LineTypeList array to hold line type properties
-    ALLOCATE ( m%LineTypeList(p%NTypes), STAT = ErrStat2 )
-    IF ( ErrStat2 /= 0 ) THEN
-       CALL SetErrStat( ErrID_Fatal, 'Error allocating space for LineTypeList array.', ErrStat, ErrMsg, RoutineName )
-       CALL CleanUp()
-       RETURN
-    END IF
+    ! Allocate memory for LineType array to hold line type properties
+    ALLOCATE( InputData%LineTypes(InputData%NTypes, 9), STAT=ErrStat2 )
+      IF ( ErrStat2 /= 0 ) THEN
+         CALL SetErrStat( ErrID_Fatal, 'Error allocating space for InputData%LineTypes.', ErrStat, ErrMsg, RoutineName )
+         CALL CleanUp()
+         RETURN
+      END IF
 
     ! read each line
-    DO I = 1,p%NTypes
-          ! read the table entries   Name      Diam    MassDenInAir    EA        cIntDamp     Can     Cat    Cdn     Cdt     in the MoorDyn input file
-       READ(UnIn,'(A)',IOSTAT=ErrStat2) Line      !read into a line
+   ALLOCATE( array_temp(9) )
+    DO I = 1, InputData%NTypes
 
-       IF (ErrStat2 == 0) THEN
-          READ(Line,*,IOSTAT=ErrStat2) m%LineTypeList(I)%name, m%LineTypeList(I)%d,  &
-             m%LineTypeList(I)%w, m%LineTypeList(I)%EA, m%LineTypeList(I)%BA, &
-             m%LineTypeList(I)%Can, m%LineTypeList(I)%Cat, m%LineTypeList(I)%Cdn, m%LineTypeList(I)%Cdt
-       END IF
+      ! CALL ParseAry(InFileInfo, LineNumber, 'Line Properties', InputData%LineTypes(I,:), 9, ErrStat2, ErrMsg2, EchoUnit)
+      CALL ParseAry(InFileInfo, LineNumber, 'Line Types', array_temp, 9, ErrStat2, ErrMsg2, EchoUnit)
+       InputData%LineTypes(I,:) = array_temp(:)
 
-       m%LineTypeList(I)%IdNum = I  ! specify IdNum of line type for error checking
+      !     ! read the table entries   Name      Diam    MassDenInAir    EA        cIntDamp     Can     Cat    Cdn     Cdt     in the MoorDyn input file
+      !  READ(UnIn,'(A)',IOSTAT=ErrStat2) Line      !read into a line
 
-
-       IF ( ErrStat2 /= ErrID_None ) THEN
-          CALL SetErrStat( ErrID_Fatal, 'Failed to read line type properties for line '//trim(Num2LStr(I)), ErrStat, ErrMsg, RoutineName )
-          CALL CleanUp()
-          RETURN
-       END IF
-
-       IF ( InitInp%Echo ) THEN
-          WRITE( UnEc, '(A)' ) TRIM(Line)
-       END IF
+      !  IF (ErrStat2 /= ErrID_None) THEN
+      !    CALL SetErrStat( ErrID_Fatal, 'Failed to read line type properties for line '//trim(Num2LStr(I)), ErrStat, ErrMsg, RoutineName )
+      !    CALL CleanUp()
+      !    RETURN
+      !  END IF
 
     END DO
-
-
+    DEALLOCATE(array_temp)
 
     !-------------------------------------------------------------------------------------------------
     !  Connections Section
     !-------------------------------------------------------------------------------------------------
 
-    CALL ReadCom( UnIn, FileName, 'Connections header', ErrStat2, ErrMsg2, UnEc )
-          CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-          IF ( ErrStat >= AbortErrLev ) THEN
-             CALL CleanUp()
-             RETURN
-          END IF
+    IF ( InputData%Echo ) WRITE(EchoUnit, '(A)') InFileInfo%Lines(LineNumber)
+   !  CALL ReadCom( UnIn, FileName, 'Connections header', ErrStat2, ErrMsg2, UnEc )
+    LineNumber = LineNumber + 1
 
+    CALL ParseVar ( InFileInfo, LineNumber, 'NConnects', InputData%NConnects, ErrStat2, ErrMsg2, EchoUnit )
 
-    CALL ReadVar ( UnIn, FileName, p%NConnects, 'NConnects', 'Number of Connects', ErrStat2, ErrMsg2, UnEc )
-          CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-          IF ( ErrStat >= AbortErrLev ) THEN
-             CALL CleanUp()
-             RETURN
-          END IF
+   !  DO I = 1, 2
+   !     CALL ReadCom( UnIn, FileName, 'Connects table header', ErrStat2, ErrMsg2, UnEc )
+   !  END DO
+    IF ( InputData%Echo ) WRITE(EchoUnit, '(A)') InFileInfo%Lines(LineNumber)
+    LineNumber = LineNumber + 1
+    IF ( InputData%Echo ) WRITE(EchoUnit, '(A)') InFileInfo%Lines(LineNumber)
+    LineNumber = LineNumber + 1
 
-
-    ! Table header
-    DO I = 1, 2
-       CALL ReadCom( UnIn, FileName, 'Connects header', ErrStat2, ErrMsg2, UnEc )
-          CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-          IF ( ErrStat >= AbortErrLev ) THEN
-             CALL CleanUp()
-             RETURN
-          END IF
-    END DO
-
-    ! make sure NConnects is at least two
-    IF ( p%NConnects < 2 ) THEN
-       ErrMsg  = ' NConnects parameter must be at least 2.'
-       CALL CleanUp()
-       RETURN
-    END IF
-
-     ! allocate ConnectList
-    ALLOCATE ( m%ConnectList(p%NConnects), STAT = ErrStat2 )
+     ! Allocate Connections list
+    ALLOCATE( InputData%Connections(InputData%NConnects, 12), STAT=ErrStat2 )
     IF ( ErrStat2 /= 0 ) THEN
        CALL SetErrStat( ErrID_Fatal, 'Error allocating space for ConnectList array.', ErrStat, ErrMsg, RoutineName )
        CALL CleanUp()
@@ -359,81 +237,37 @@ CONTAINS
     END IF
 
     ! read each line
-    DO I = 1,p%NConnects
-          ! read the table entries   Node      Type      X        Y         Z        M        V        FX       FY      FZ  Cda Ca
-       READ(UnIn,'(A)',IOSTAT=ErrStat2) Line      !read into a line
+    ALLOCATE( array_temp(12) )
+    DO I = 1, InputData%NConnects
+      CALL ParseAry(InFileInfo, LineNumber, 'Connection Table', array_temp, 12, ErrStat2, ErrMsg2, EchoUnit )
+       InputData%Connections(I,:) = array_temp(:)
 
-       IF (ErrStat2 == 0) THEN
-          READ(Line,*,IOSTAT=ErrStat2) m%ConnectList(I)%IdNum, m%ConnectList(I)%type, m%ConnectList(I)%conX, &
-               m%ConnectList(I)%conY, m%ConnectList(I)%conZ, m%ConnectList(I)%conM, &
-               m%ConnectList(I)%conV, m%ConnectList(I)%conFX, m%ConnectList(I)%conFY, &
-                m%ConnectList(I)%conFZ, m%ConnectList(I)%conCdA, m%ConnectList(I)%conCa
-       END IF
-
-       IF ( ErrStat2 /= 0 ) THEN
-          CALL WrScr('   Unable to parse Connection '//trim(Num2LStr(I))//' row in input file.')  ! Specific screen output because errors likely
-          CALL WrScr('   Ensure row has all 12 columns, including CdA and Ca.')           ! to be caused by non-updated input file formats.
-             CALL SetErrStat( ErrID_Fatal, 'Failed to read connects.' , ErrStat, ErrMsg, RoutineName ) ! would be nice to specify which line <<<<<<<<<
-          CALL CleanUp()
-          RETURN
-       END IF
-       
-       ! check for sequential IdNums
-       IF ( m%ConnectList(I)%IdNum .NE. I ) THEN
-         CALL SetErrStat( ErrID_Fatal, 'Node numbers must be sequential starting from 1.', ErrStat, ErrMsg, RoutineName )
-         CALL CleanUp()
-         RETURN
-       END IF
-
-
-
-
-       IF ( InitInp%Echo ) THEN
-          WRITE( UnEc, '(A)' ) TRIM(Line)
-       END IF
+      !     ! read the table entries   Node      Type      X        Y         Z        M        V        FX       FY      FZ  Cda Ca
+      !  READ(UnIn,'(A)',IOSTAT=ErrStat2) Line      !read into a line
 
     END DO
+    DEALLOCATE(array_temp)
 
 
     !-------------------------------------------------------------------------------------------------
     !  Lines Section
     !-------------------------------------------------------------------------------------------------
+    IF ( InputData%Echo ) WRITE(EchoUnit, '(A)') InFileInfo%Lines(LineNumber)
+   !  CALL ReadCom( UnIn, FileName, 'Lines header', ErrStat2, ErrMsg2, UnEc )
+    LineNumber = LineNumber + 1
 
-    CALL ReadCom( UnIn, FileName, 'Lines header', ErrStat2, ErrMsg2, UnEc )
-          CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-          IF ( ErrStat >= AbortErrLev ) THEN
-             CALL CleanUp()
-             RETURN
-          END IF
+    CALL ParseVar ( InFileInfo, LineNumber, 'NLines', InputData%NLines, ErrStat2, ErrMsg2, EchoUnit )
 
+   !  DO I = 1, 2
+   !     CALL ReadCom( UnIn, FileName, 'Lines table header', ErrStat2, ErrMsg2, UnEc )
+   !  END DO
+    IF ( InputData%Echo ) WRITE(EchoUnit, '(A)') InFileInfo%Lines(LineNumber)
+    LineNumber = LineNumber + 1
+    IF ( InputData%Echo ) WRITE(EchoUnit, '(A)') InFileInfo%Lines(LineNumber)
+    LineNumber = LineNumber + 1
 
-    CALL ReadVar ( UnIn, FileName, p%NLines, 'NLines', 'Number of Lines', ErrStat2, ErrMsg2, UnEc )
-          CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-          IF ( ErrStat >= AbortErrLev ) THEN
-             CALL CleanUp()
-             RETURN
-          END IF
-
-
-    ! Table header
-    DO I = 1, 2
-       CALL ReadCom( UnIn, FileName, 'Lines header', ErrStat2, ErrMsg2, UnEc )
-          CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-          IF ( ErrStat >= AbortErrLev ) THEN
-             CALL CleanUp()
-             RETURN
-          END IF
-    END DO
-
-    ! make sure NLines is at least one
-    IF ( p%NLines < 1 ) THEN
-       CALL SetErrStat( ErrID_Fatal, 'NLines parameter must be at least 1.', ErrStat, ErrMsg, RoutineName )
-       CALL CleanUp()
-       RETURN
-    END IF
-
-     ! allocate LineList
-    ALLOCATE ( m%LineList(p%NLines), STAT = ErrStat2 )
+      ! allocate LineList
+    ALLOCATE ( InputData%Lines(InputData%NLines, 7), STAT = ErrStat2 )
     IF ( ErrStat2 /= 0 ) THEN
        CALL SetErrStat( ErrID_Fatal, 'Error allocating space for LineList array.', ErrStat, ErrMsg, RoutineName )
        CALL CleanUp()
@@ -441,141 +275,91 @@ CONTAINS
     END IF
 
     ! read each line
-    DO I = 1,p%NLines
-          ! read the table entries   Line     LineType  UnstrLen  NumSegs   NodeAnch  NodeFair  Flags/Outputs
-       READ(UnIn,'(A)',IOSTAT=ErrStat2) Line      !read into a line
+    allocate(array_temp(7))
+    DO I = 1,InputData%NLines
+      CALL ParseAry(InFileInfo, LineNumber, 'Line data', array_temp, 7, ErrStat2, ErrMsg2, EchoUnit)
+      InputData%Lines(I,:) = array_temp
 
+      !     ! read the table entries   Line     LineType  UnstrLen  NumSegs   NodeAnch  NodeFair  Flags/Outputs
+      !  READ(UnIn,'(A)',IOSTAT=ErrStat2) Line      !read into a line
 
-       IF (ErrStat2 == 0) THEN
-          READ(Line,*,IOSTAT=ErrStat2) m%LineList(I)%IdNum, m%LineList(I)%type, m%LineList(I)%UnstrLen, &
-            m%LineList(I)%N, m%LineList(I)%AnchConnect, m%LineList(I)%FairConnect, LineOutString
-       END IF
+      !  IF ( ErrStat2 /= 0 ) THEN
+      !     CALL SetErrStat( ErrID_Fatal, 'Failed to read line data for Line '//trim(Num2LStr(I)), ErrStat, ErrMsg, RoutineName )
+      !     CALL CleanUp()
+      !     RETURN
+      !  END IF
 
-       IF ( ErrStat2 /= 0 ) THEN
-          CALL SetErrStat( ErrID_Fatal, 'Failed to read line data for Line '//trim(Num2LStr(I)), ErrStat, ErrMsg, RoutineName )
-          CALL CleanUp()
-          RETURN
-       END IF
-       
-       
-       ! check for sequential IdNums
-       IF ( m%LineList(I)%IdNum .NE. I ) THEN
-         CALL SetErrStat( ErrID_Fatal, 'Line numbers must be sequential starting from 1.', ErrStat, ErrMsg, RoutineName )
-         CALL CleanUp()
-         RETURN
-       END IF
-
-       ! identify index of line type
-       DO J = 1,p%NTypes
-         IF (trim(m%LineList(I)%type) == trim(m%LineTypeList(J)%name)) THEN
-           m%LineList(I)%PropsIdNum = J
-           EXIT
-           IF (J == p%NTypes) THEN   ! call an error if there is no match
-               CALL SetErrStat( ErrID_Severe, 'Unable to find matching line type name for Line '//trim(Num2LStr(I)), ErrStat, ErrMsg, RoutineName )
-           END IF
-         END IF
-       END DO
-       
-       ! process output flag characters (LineOutString) and set line output flag array (OutFlagList)
-       m%LineList(I)%OutFlagList = 0  ! first set array all to zero
-       IF ( scan( LineOutString, 'p') > 0 )  m%LineList(I)%OutFlagList(2) = 1 
-       IF ( scan( LineOutString, 'v') > 0 )  m%LineList(I)%OutFlagList(3) = 1
-       IF ( scan( LineOutString, 'U') > 0 )  m%LineList(I)%OutFlagList(4) = 1
-       IF ( scan( LineOutString, 'D') > 0 )  m%LineList(I)%OutFlagList(5) = 1
-       IF ( scan( LineOutString, 't') > 0 )  m%LineList(I)%OutFlagList(6) = 1
-       IF ( scan( LineOutString, 'c') > 0 )  m%LineList(I)%OutFlagList(7) = 1
-       IF ( scan( LineOutString, 's') > 0 )  m%LineList(I)%OutFlagList(8) = 1
-       IF ( scan( LineOutString, 'd') > 0 )  m%LineList(I)%OutFlagList(9) = 1
-       IF (SUM(m%LineList(I)%OutFlagList) > 0)   m%LineList(I)%OutFlagList(1) = 1  ! this first entry signals whether to create any output file at all
-       ! the above letter-index combinations define which OutFlagList entry corresponds to which output type
-       
-   
-       ! check errors
-       IF ( ErrStat /= ErrID_None ) THEN
-          ErrMsg  = ' Failed to read line data for Line '//trim(Num2LStr(I))
-          CALL CleanUp()
-          RETURN
-       END IF
-
-
-       IF ( InitInp%Echo ) THEN
-          WRITE( UnEc, '(A)' ) TRIM(Line)
-       END IF
-
-    END DO  ! I
-
-
+    END DO
+   DEALLOCATE(array_temp)
     !-------------------------------------------------------------------------------------------------
     ! Read any options lines
     !-------------------------------------------------------------------------------------------------
+   IF ( InputData%Echo ) WRITE(EchoUnit, '(A)') InFileInfo%Lines(LineNumber)
+   !  CALL ReadCom( UnIn, FileName, 'Options header', ErrStat2, ErrMsg2, UnEc )
+    LineNumber = LineNumber + 1
 
-    CALL ReadCom( UnIn, FileName, 'Options header', ErrStat2, ErrMsg2, UnEc )
-          CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-          IF ( ErrStat >= AbortErrLev ) THEN
-             CALL CleanUp()
-             RETURN
-          END IF
 
      ! loop through any remaining input lines, and use them to set options (overwriting default values in many cases).
      ! doing this manually since I'm not sure that there is a built in subroutine for reading any input value on any line number.
-     DO
+   !   DO
 
-       READ(UnIn,'(A)',IOSTAT=ErrStat2) Line      !read into a line
+   !     READ(UnIn,'(A)',IOSTAT=ErrStat2) Line      !read into a line
 
-       IF (ErrStat2 == 0) THEN
-         IF (( Line(1:3) == '---' ) .OR. ( Line(1:3) == 'END' ) .OR. ( Line(1:3) == 'end' ))  EXIT  ! check if it's the end line
+   !     IF (ErrStat2 == 0) THEN
+   !       IF (( Line(1:3) == '---' ) .OR. ( Line(1:3) == 'END' ) .OR. ( Line(1:3) == 'end' ))  EXIT  ! check if it's the end line
 
-         READ(Line,*,IOSTAT=ErrStat2) OptValue, OptString  ! look at first two entries, ignore remaining words in line, which should be comments
-       END IF
+   !       READ(Line,*,IOSTAT=ErrStat2) OptValue, OptString  ! look at first two entries, ignore remaining words in line, which should be comments
+   !     END IF
 
-       IF ( ErrStat2 /= 0 ) THEN
-          CALL SetErrStat( ErrID_Fatal, 'Failed to read options.', ErrStat, ErrMsg, RoutineName ) ! would be nice to specify which line had the error
-          CALL CleanUp()
-          RETURN
-       END IF
+   !     IF ( ErrStat2 /= 0 ) THEN
+   !        CALL SetErrStat( ErrID_Fatal, 'Failed to read options.', ErrStat, ErrMsg, RoutineName ) ! would be nice to specify which line had the error
+   !        CALL CleanUp()
+   !        RETURN
+   !     END IF
                      
-       CALL Conv2UC(OptString)
+   !     CALL Conv2UC(OptString)
 
-       ! check all possible options types and see if OptString is one of them, in which case set the variable.
-       if ( OptString == 'DTM') THEN
-         read (OptValue,*) p%dtM0   ! InitInp%DTmooring
-       else if ( OptString == 'G') then
-         read (OptValue,*) p%G
-       else if ( OptString == 'RHOW') then
-         read (OptValue,*) p%rhoW
-       else if ( OptString == 'WTRDPTH') then
-         read (OptValue,*) p%WtrDpth
-       else if ( OptString == 'KBOT')  then
-         read (OptValue,*) p%kBot
-       else if ( OptString == 'CBOT')  then
-         read (OptValue,*) p%cBot
-       else if ( OptString == 'DTIC')  then
-         read (OptValue,*) InitInp%dtIC
-       else if ( OptString == 'TMAXIC')  then
-         read (OptValue,*) InitInp%TMaxIC
-       else if ( OptString == 'CDSCALEIC')  then
-         read (OptValue,*) InitInp%CdScaleIC
-       else if ( OptString == 'THRESHIC')  then
-         read (OptValue,*) InitInp%threshIC
-       else
-         CALL SetErrStat( ErrID_Warn, 'unable to interpret input '//trim(OptString), ErrStat, ErrMsg, RoutineName ) 
-       end if
+   !     ! check all possible options types and see if OptString is one of them, in which case set the variable.
+   !     if ( OptString == 'DTM') THEN
+   !       read (OptValue,*) InputData%dtM   ! InitInp%DTmooring
+   !    !  else if ( OptString == 'G') then
+   !    !    read (OptValue,*) InputData%g
+   !    !  else if ( OptString == 'RHOW') then
+   !    !    read (OptValue,*) InputData%rhoW
+   !    !  else if ( OptString == 'WTRDPTH') then
+   !    !    read (OptValue,*) InputData%WtrDpth
+   !     else if ( OptString == 'KBOT')  then
+   !       read (OptValue,*) InputData%kBot
+   !     else if ( OptString == 'CBOT')  then
+   !       read (OptValue,*) InputData%cBot
+   !     else if ( OptString == 'DTIC')  then
+   !       read (OptValue,*) InputData%dtIC
+   !     else if ( OptString == 'TMAXIC')  then
+   !       read (OptValue,*) InputData%TMaxIC
+   !     else if ( OptString == 'CDSCALEIC')  then
+   !       read (OptValue,*) InputData%CdScaleIC
+   !     else if ( OptString == 'THRESHIC')  then
+   !       read (OptValue,*) InputData%threshIC
+   !     else
+   !       CALL SetErrStat( ErrID_Warn, 'unable to interpret input '//trim(OptString), ErrStat, ErrMsg, RoutineName ) 
+   !     end if
 
-       IF ( InitInp%Echo ) THEN
-          WRITE( UnEc, '(A)' ) TRIM(Line)
-       END IF
+   !    !  IF ( InitInp%Echo ) THEN
+   !    !     WRITE( UnEc, '(A)' ) TRIM(Line)
+   !    !  END IF
 
-     END DO
+   !   END DO
 
 
      !-------------------------------------------------------------------------------------------------
      ! Read the FAST-style outputs list in the final section, if there is one
      !-------------------------------------------------------------------------------------------------
-   !     we don't read in the outputs header line because it's already been read in for detecting the end of the variable-length options section
-   !     CALL ReadCom( UnIn, FileName, 'Outputs header', ErrStat, ErrMsg, UnEc )
+    IF ( InputData%Echo ) WRITE(EchoUnit, '(A)') InFileInfo%Lines(LineNumber)
+    !  CALL ReadCom( UnIn, FileName, 'Outputs header', ErrStat, ErrMsg, UnEc )
+     LineNumber = LineNumber + 1
 
     ! allocate InitInp%Outliest (to a really big number for now...)
-    CALL AllocAry( InitInp%OutList, 1000, "MoorDyn Input File's Outlist", ErrStat2, ErrMsg2 )
+    CALL AllocAry( InputData%OutList, 1000, "MoorDyn Input File's Outlist", ErrStat2, ErrMsg2 )
          CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
          IF ( ErrStat >= AbortErrLev ) THEN
             CALL CleanUp()
@@ -583,59 +367,90 @@ CONTAINS
          END IF
 
     ! OutList - List of user-requested output channels (-):
-    CALL ReadOutputList ( UnIn, FileName, InitInp%OutList, p%NumOuts, 'OutList', "List of user-requested output channels", ErrStat2, ErrMsg2, UnEc )
-          CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-          IF ( ErrStat >= AbortErrLev ) THEN
-             CALL CleanUp()
-             RETURN
-          END IF
+    CALL ReadOutputListFromFileInfo( InFileInfo, LineNumber, InputData%OutList, InputData%NumOuts, 'OutList', "List of user-requested output channels", ErrStat2, ErrMsg2, EchoUnit )
+   !  CALL ReadOutputList ( UnIn, FileName, InputData%OutList, InputData%NumOuts, 'OutList', "List of user-requested output channels", ErrStat2, ErrMsg2, UnEc )
 
-   !print *, 'NumOuts is ', p%NumOuts
-   !print *, '  OutList is ', InitInp%OutList(1:p%NumOuts)
-
-
-     !-------------------------------------------------------------------------------------------------
-     ! This is the end of the input file
-     !-------------------------------------------------------------------------------------------------
-
-         CALL CleanUp()
+         ! CALL CleanUp()
 
    CONTAINS
      ! subroutine to set ErrState and close the files if an error occurs
      SUBROUTINE CleanUp()
 
-        ! ErrStat = ErrID_Fatal  
         CLOSE( UnIn )
-        IF (InitInp%Echo) CLOSE( UnEc )
 
      END SUBROUTINE
 
-   END SUBROUTINE MDIO_ReadInput
-   ! ====================================================================================================
+END SUBROUTINE
+! ====================================================================================================
+SUBROUTINE MDIO_ValidateInputData(InputData, ErrStat, ErrMsg)
+
+      TYPE(MD_InputData), INTENT(IN) :: InputData
+      INTEGER, INTENT(OUT) :: ErrStat
+      CHARACTER(*), INTENT(OUT) :: ErrMsg
+
+      CHARACTER(*), PARAMETER :: RoutineName = 'MDIO_ValidateInputData'
+
+      ! Check that NTypes is not zero or negative
+      IF ( InputData%NTypes < 1 ) THEN
+         CALL SetErrStat( ErrID_Fatal, 'NTypes parameter must be greater than zero.', ErrStat, ErrMsg, RoutineName )
+         RETURN
+      END IF
+
+       ! Check that NConnects is at least two
+      IF ( InputData%NConnects < 2 ) THEN
+         CALL SetErrStat( ErrID_Fatal, 'NConnects parameter must be at least 2.', ErrStat, ErrMsg, RoutineName )
+         RETURN
+      END IF
+
+      ! make sure NLines is at least one
+      IF ( InputData%NLines < 1 ) THEN
+         CALL SetErrStat( ErrID_Fatal, 'NLines parameter must be greater than zero.', ErrStat, ErrMsg, RoutineName )
+         RETURN
+      END IF
+
+END SUBROUTINE
+! ====================================================================================================
+SUBROUTINE MDIO_ConstructInitData(InputData, InitInput)
+   TYPE(MD_InputData), INTENT(IN) :: InputData
+   TYPE(MD_InitInputType), INTENT(OUT) :: InitInput
+
+   InitInput%g = InputData%g
+   InitInput%rhoW = InputData%rhoW
+   InitInput%WtrDepth = InputData%WtrDpth
+   ! InitInput%PtfmInit = InputData%Pt      !< initial position of platform [-]
+   ! InitInput%FileName      !< MoorDyn input file [-]
+   ! InitInput%RootName      !< RootName for writing output files [-]
+   ! InitInput%Echo      !< echo parameter - do we want to echo the header line describing the input file? [-]
+   InitInput%DTIC = InputData%dtIC
+   InitInput%TMaxIC = InputData%TMaxIC
+   InitInput%CdScaleIC = InputData%CdScaleIC
+   InitInput%threshIC = InputData%threshIC
+   InitInput%OutList = InputData%OutList
+   ! InitInput%UseInputFile = .TRUE.      !< TRUE to parse inputs from a file; FALSE to get inputs in memory. [-]
+   ! InitInput%PassedInputData      !< TRUE to parse inputs from a file; FALSE to get inputs in memory. [-]
+
+END SUBROUTINE
+! ====================================================================================================
+SUBROUTINE MDIO_ProcessOutList(OutList, p, m, y, InitOut, ErrStat, ErrMsg )
+
+      ! This routine processes the output channels requested by OutList, checking for validity and setting
+      ! the p%OutParam structures (of type MD_OutParmType) for each valid output.
+      ! It assumes the value p%NumOuts has been set beforehand, and sets the values of p%OutParam.
 
 
+      IMPLICIT                        NONE
 
-  ! ====================================================================================================
-  SUBROUTINE MDIO_ProcessOutList(OutList, p, m, y, InitOut, ErrStat, ErrMsg )
+      ! Passed variables
+      CHARACTER(ChanLen),        INTENT(IN)     :: OutList(:)                  ! The list of user-requested outputs
+      TYPE(MD_ParameterType),    INTENT(INOUT)  :: p                           ! The module parameters
+      TYPE(MD_MiscVarType),      INTENT(INOUT)  :: m
+      TYPE(MD_OutputType),       INTENT(INOUT)  :: y                           ! Initial system outputs (outputs are not calculated; only the output mesh is initialized)
+      TYPE(MD_InitOutputType),   INTENT(INOUT)  :: InitOut                     ! Output for initialization routine
+      INTEGER(IntKi),            INTENT(OUT)    :: ErrStat                     ! The error status code
+      CHARACTER(*),              INTENT(OUT)    :: ErrMsg                      ! The error message, if an error occurred
 
-  ! This routine processes the output channels requested by OutList, checking for validity and setting
-  ! the p%OutParam structures (of type MD_OutParmType) for each valid output.
-  ! It assumes the value p%NumOuts has been set beforehand, and sets the values of p%OutParam.
-
-
-    IMPLICIT                        NONE
-
-    ! Passed variables
-    CHARACTER(ChanLen),        INTENT(IN)     :: OutList(:)                  ! The list of user-requested outputs
-    TYPE(MD_ParameterType),    INTENT(INOUT)  :: p                           ! The module parameters
-    TYPE(MD_MiscVarType),      INTENT(INOUT)  :: m
-    TYPE(MD_OutputType),       INTENT(INOUT)  :: y                           ! Initial system outputs (outputs are not calculated; only the output mesh is initialized)
-    TYPE(MD_InitOutputType),   INTENT(INOUT)  :: InitOut                     ! Output for initialization routine
-    INTEGER(IntKi),            INTENT(OUT)    :: ErrStat                     ! The error status code
-    CHARACTER(*),              INTENT(OUT)    :: ErrMsg                      ! The error message, if an error occurred
-
-    ! Local variables
-    INTEGER                      :: I                                        ! Generic loop-counting index
+      ! Local variables
+      INTEGER                      :: I                                        ! Generic loop-counting index
 !    INTEGER                      :: J                                        ! Generic loop-counting index
 !    INTEGER                      :: INDX                                     ! Index for valid arrays
 
@@ -876,7 +691,7 @@ CONTAINS
       END DO
 
 
-   CONTAINS
+      CONTAINS
 
       SUBROUTINE DenoteInvalidOutput( OutParm )
          TYPE(MD_OutParmType), INTENT (INOUT)  :: OutParm
@@ -887,16 +702,9 @@ CONTAINS
 
       END SUBROUTINE DenoteInvalidOutput
 
-   END SUBROUTINE MDIO_ProcessOutList
-   !====================================================================================================
-
-
-
-
-
-   !====================================================================================================
-   SUBROUTINE MDIO_OpenOutput( OutRootName,  p, m, InitOut, ErrStat, ErrMsg )
-   !----------------------------------------------------------------------------------------------------
+END SUBROUTINE MDIO_ProcessOutList
+!====================================================================================================
+SUBROUTINE MDIO_OpenOutput( OutRootName,  p, m, InitOut, ErrStat, ErrMsg )
 
       CHARACTER(*),                  INTENT( IN    ) :: OutRootName          ! Root name for the output file
       TYPE(MD_ParameterType),        INTENT( INOUT ) :: p
@@ -908,7 +716,6 @@ CONTAINS
       INTEGER                                        :: I                    ! Generic loop counter
       INTEGER                                        :: J                    ! Generic loop counter
       CHARACTER(1024)                                :: OutFileName          ! The name of the output file  including the full path.
-!      INTEGER                                        :: L                           ! counter for index in LineWrOutput
       INTEGER                                        :: LineNumOuts                 ! number of entries in LineWrOutput for each line
       CHARACTER(200)                                 :: Frmt                 ! a string to hold a format statement
       INTEGER                                        :: ErrStat2
@@ -944,10 +751,6 @@ CONTAINS
          WRITE(p%MDUnOut,Frmt, IOSTAT=ErrStat2)  TRIM( 'Time' ), ( p%Delim, TRIM( p%OutParam(I)%Name), I=1,p%NumOuts )
 
          WRITE(p%MDUnOut,Frmt)  TRIM( '(s)' ), ( p%Delim, TRIM( p%OutParam(I)%Units ), I=1,p%NumOuts )
-
- !     ELSE  ! if no outputs requested
-
- !        call wrscr('note, MDIO_OpenOutput thinks that no outputs have been requested.')
 
       END IF
 

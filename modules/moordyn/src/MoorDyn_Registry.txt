@@ -14,6 +14,28 @@
 include Registry_NWTC_Library.txt
 
 
+# This is data defined in the Input File for this module (or could otherwise be passed in)
+# ..... Primary Input file data ...................................................................................................
+typedef  MoorDyn/MD   MD_InputData     LOGICAL             Echo         -     -     -     "Echo the input file"                                    -
+typedef  ^            ^                IntKi               NTypes       -     -     -     "Type of windfile"                                       -
+typedef  ^            ^                CHARACTER(1024)     LineTypes    ::    -     -     "Direction of wind propagation (meteorological direction)"  (degrees)
+typedef  ^            ^                IntKi               NConnects    -     -     -     "Type of windfile"                                       -
+typedef  ^            ^                CHARACTER(1024)     Connections  ::    -     -     "Direction of wind propagation (meteorological direction)"  (degrees)
+typedef  ^            ^                IntKi               NLines       -     -     -     "Type of windfile"                                       -
+typedef  ^            ^                CHARACTER(1024)     Lines        ::    -     -     "Direction of wind propagation (meteorological direction)"  (degrees)
+typedef  ^            ^                ReKi                dtM          -     -     -     "List of Z coordinates for wind velocity measurements"   meters
+typedef  ^            ^                ReKi                g            -     -     -     "List of Z coordinates for wind velocity measurements"   meters
+typedef  ^            ^                ReKi                rhoW         -     -     -     "List of Z coordinates for wind velocity measurements"   meters
+typedef  ^            ^                ReKi                WtrDpth      -     -     -     "List of Z coordinates for wind velocity measurements"   meters
+typedef  ^            ^                ReKi                kbot         -     -     -     "Steady wind -- horizontal windspeed"                    meters/s
+typedef  ^            ^                ReKi                cbot         -     -     -     "Steady wind -- reference height"                        meters
+typedef  ^            ^                ReKi                dtIC         -     -     -     "Steady wind -- power law exponent"                      -
+typedef  ^            ^                ReKi                TmaxIC       -     -     -     "Steady wind -- power law exponent"                      -
+typedef  ^            ^                ReKi                CdScaleIC    -     -     -     "Steady wind -- power law exponent"                      -
+typedef  ^            ^                ReKi                threshIC     -     -     -     "Steady wind -- power law exponent"                      -
+typedef  ^            ^                CHARACTER(ChanLen)  OutList      :     -     -     "List of user-requested output channels"                 -
+typedef  ^            ^                IntKi               NumOuts      -     -     -     "List of user-requested output channels"                 -
+
 ## ============================== Define input types here: ============================================================================================================================================
 typedef   MoorDyn/MD  InitInputType    ReKi               g              -   -999.9 -   "gravity constant"   "[m/s^2]"
 typedef   ^           ^                ReKi               rhoW           -   -999.9 -   "sea density"        "[kg/m^3]"
@@ -26,7 +48,9 @@ typedef   ^           ^                ReKi               DTIC           -    - 
 typedef   ^           ^                ReKi               TMaxIC         -    120   -   "maximum time to allow for getting converged ICs"              "[s]"
 typedef   ^           ^                ReKi               CdScaleIC      -    1     -   "factor to scale drag coefficients by during dynamic relaxation"              "[]"
 typedef   ^           ^                ReKi               threshIC       -    0.01  -   "convergence tolerance for ICs  (0.01 means 1%)"              "[]"
-typedef   ^           ^                CHARACTER(ChanLen)      OutList        {:}   ""   -   "string containing list of output channels requested in input file"
+typedef   ^           ^                CHARACTER(ChanLen) OutList        {:}   ""   -   "string containing list of output channels requested in input file"
+typedef   ^           ^                LOGICAL            UseInputFile   -   .TRUE. -   "TRUE to parse inputs from a file; FALSE to get inputs in memory." -
+typedef   ^           ^                FileInfoType       PassedInputData  -  -     -   
 
 
 # ====================================== Internal data types ========================================================================
