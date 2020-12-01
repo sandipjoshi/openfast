@@ -71,15 +71,15 @@ CONTAINS
       INTEGER(IntKi)                               :: ErrStat2       ! Error status of the operation
       CHARACTER(ErrMsgLen)                         :: ErrMsg2        ! Error message if ErrStat2 /= ErrID_None
       
-      INTEGER(IntKi) :: EchoUnit      
+      INTEGER(IntKi)                               :: EchoUnit      
       type(FileInfoType)                           :: InFileInfo
+      TYPE(MD_InputData)                           :: InputData
 
       TYPE(MD_InputType)    :: uArray(1)    ! a size-one array for u to make call to TimeStep happy
       REAL(DbKi)            :: utimes(1)    ! a size-one array saying time is 0 to make call to TimeStep happy  
 
       CHARACTER(MaxWrScrLen)                       :: Message
 
-      TYPE(MD_InputData) :: InputData
 
       ErrStat = ErrID_None
       ErrMsg  = ""
@@ -125,22 +125,15 @@ CONTAINS
          ! Copy InputData to InitInput
       CALL MDIO_ConstructInitData(InputData, InitInp)
 
-         ! populates m
+         ! Populate m
       CALL MD_ConstructConnectionLineObjects(InputData, m, ErrStat2, ErrMsg2)
          CALL CheckError( ErrStat2, ErrMsg2 )
          IF (ErrStat >= AbortErrLev) RETURN
 
-         ! populate p
-      ! CALL MD_SetParameters(InputData, p)
-      p%NTypes = InputData%NTypes
-      p%NConnects = InputData%NConnects
-      p%NLines = InputData%NLines
-      p%dtM0 = InputData%dtM
-      p%G = InputData%G
-      p%rhoW = InputData%rhoW
-      p%WtrDpth = InputData%WtrDpth
-      p%kBot = InputData%kBot
-      p%cBot = InputData%cBot
+         ! Populate p
+      CALL MD_SetParameters(InputData, p, ErrStat2, ErrMsg2)
+         CALL CheckError( ErrStat2, ErrMsg2 )
+         IF (ErrStat >= AbortErrLev) RETURN
 
       ! process the OutList array and set up the index arrays for the requested output quantities
       CALL MDIO_ProcessOutList(InitInp%OutList, p, m, y, InitOut, ErrStat2, ErrMsg2 )
@@ -1315,6 +1308,27 @@ CONTAINS
  
 
    END SUBROUTINE TimeStep
+   !======================================================================
+   SUBROUTINE MD_SetParameters( InputData, p, errStat, errMsg )
+      TYPE(MD_InputData),     INTENT(IN   ) :: InputData   ! Input data for initialization routine
+      TYPE(MD_ParameterType), INTENT(  OUT) :: p           ! Parameters
+      INTEGER(IntKi),         INTENT(  OUT) :: ErrStat     ! Error status of the operation
+      CHARACTER(*),           INTENT(  OUT) :: ErrMsg      ! Error message if ErrStat /= ErrID_None
+
+      ErrStat  = ErrID_None
+      ErrMsg   = ""
+
+      p%NTypes = InputData%NTypes
+      p%NConnects = InputData%NConnects
+      p%NLines = InputData%NLines
+      p%dtM0 = InputData%dtM
+      p%G = InputData%G
+      p%rhoW = InputData%rhoW
+      p%WtrDpth = InputData%WtrDpth
+      p%kBot = InputData%kBot
+      p%cBot = InputData%cBot
+
+   END SUBROUTINE MD_SetParameters
    !======================================================================
    SUBROUTINE MD_ConstructConnectionLineObjects(InputData, m, ErrStat, ErrMsg)
       TYPE(MD_InputData), INTENT(IN) :: InputData
