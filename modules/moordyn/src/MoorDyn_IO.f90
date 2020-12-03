@@ -101,28 +101,26 @@ SUBROUTINE MDIO_ParseInputFileInfo( InFileInfo, EchoFileName, InputData, ErrStat
 
 
       ! Passed variables
-    TYPE(FileInfoType), INTENT(IN   )  :: InFileInfo             !< name of the input file
-    CHARACTER(*), INTENT(IN)           :: EchoFileName
-    TYPE(MD_InputData), INTENT(  OUT)  :: InputData            !< The data for initialization
-    INTEGER,            INTENT(  OUT)  :: ErrStat              !< Returned error status  from this subroutine
-    CHARACTER(*),       INTENT(  OUT)  :: ErrMsg               !< Returned error message from this subroutine
+    TYPE(FileInfoType), INTENT(IN   ) :: InFileInfo      !< Name of the input file
+    CHARACTER(*),       INTENT(IN   ) :: EchoFileName    !< Name of the file to write the echo info
+    TYPE(MD_InputData), INTENT(  OUT) :: InputData       !< The data for initialization
+    INTEGER,            INTENT(  OUT) :: ErrStat         !< Returned error status  from this subroutine
+    CHARACTER(*),       INTENT(  OUT) :: ErrMsg          !< Returned error message from this subroutine
 
-    ! Local variables
+      ! Local variables
+    INTEGER                           :: I, J            ! Generic integer for counting
+    INTEGER                           :: UnIn            ! Unit number for the input file
+    INTEGER                           :: EchoUnit        ! The local unit number for this module's echo file
+    CHARACTER(1024)                   :: Line            ! String to temporarially hold value of read line
+    CHARACTER(20)                     :: OptString       ! String to temporarially hold name of option variable
+    CHARACTER(20)                     :: OptValue        ! String to temporarially hold value of options variable input
+    INTEGER                           :: LineNumber      ! Variable to track the current line number being parsed
 
-    INTEGER                      :: I, J                 ! generic integer for counting
-    INTEGER                      :: UnIn                 ! Unit number for the input file
-    INTEGER                      :: EchoUnit             ! The local unit number for this module's echo file
-    CHARACTER(1024)              :: Line                 ! String to temporarially hold value of read line
-    CHARACTER(20)                :: OptString            ! String to temporarially hold name of option variable
-    CHARACTER(20)                :: OptValue             ! String to temporarially hold value of options variable input
+    CHARACTER(1024), DIMENSION(:), ALLOCATABLE :: array_temp  ! Temporary variable for parsing list inputs
 
     INTEGER(IntKi)               :: ErrStat2
     CHARACTER(ErrMsgLen)         :: ErrMsg2
     CHARACTER(*), PARAMETER      :: RoutineName = 'MDIO_ParseInputFile'
-
-    INTEGER :: LineNumber
-
-    CHARACTER(1024), DIMENSION(:), ALLOCATABLE :: array_temp
 
     ErrStat = ErrID_None
     ErrMsg = ""
@@ -132,11 +130,11 @@ SUBROUTINE MDIO_ParseInputFileInfo( InFileInfo, EchoFileName, InputData, ErrStat
     !-------------------------------------------------------------------------------------------------
     ! File header
     !-------------------------------------------------------------------------------------------------
+    !  MoorDyn input file header line 1
     LineNumber = LineNumber + 1
-   !  CALL ReadCom( UnIn, FileName, 'MoorDyn input file header line 1', ErrStat2, ErrMsg2 )
-
+    
+    !  MoorDyn input file header line 2
     LineNumber = LineNumber + 1
-   !  CALL ReadCom( UnIn, FileName, 'MoorDyn input file header line 2', ErrStat2, ErrMsg2 )
 
     LineNumber = LineNumber + 1
     CALL ParseVar ( InFileInfo, LineNumber, 'Echo', InputData%Echo, ErrStat2, ErrMsg2 )
@@ -164,7 +162,7 @@ SUBROUTINE MDIO_ParseInputFileInfo( InFileInfo, EchoFileName, InputData, ErrStat
     !  Line Types Properties Section
     !-------------------------------------------------------------------------------------------------
     IF ( InputData%Echo ) WRITE(EchoUnit, '(A)') InFileInfo%Lines(LineNumber)
-   !  CALL ReadCom( UnIn, FileName, 'Line types header', ErrStat2, ErrMsg2, UnEc )
+   ! Line types header
     LineNumber = LineNumber + 1
 
     CALL ParseVar ( InFileInfo, LineNumber, 'NTypes', InputData%NTypes, ErrStat2, ErrMsg2, EchoUnit )
@@ -299,56 +297,55 @@ SUBROUTINE MDIO_ParseInputFileInfo( InFileInfo, EchoFileName, InputData, ErrStat
     LineNumber = LineNumber + 1
 
 
-     ! loop through any remaining input lines, and use them to set options (overwriting default values in many cases).
-     ! doing this manually since I'm not sure that there is a built in subroutine for reading any input value on any line number.
-   !   DO
+      ! loop through any remaining input lines, and use them to set options (overwriting default values in many cases).
+      ! doing this manually since I'm not sure that there is a built in subroutine for reading any input value on any line number.
+      DO
 
-   !     READ(UnIn,'(A)',IOSTAT=ErrStat2) Line      !read into a line
+         allocate(array_temp(2))
 
-   !     IF (ErrStat2 == 0) THEN
-   !       IF (( Line(1:3) == '---' ) .OR. ( Line(1:3) == 'END' ) .OR. ( Line(1:3) == 'end' ))  EXIT  ! check if it's the end line
+            ! Read the first two words in Line.
+         CALL GetWords ( InFileInfo%Lines(LineNumber), array_temp, 2 )
 
-   !       READ(Line,*,IOSTAT=ErrStat2) OptValue, OptString  ! look at first two entries, ignore remaining words in line, which should be comments
-   !     END IF
+         OptValue = array_temp(1)
+         OptString = array_temp(2)
 
-   !     IF ( ErrStat2 /= 0 ) THEN
-   !        CALL SetErrStat( ErrID_Fatal, 'Failed to read options.', ErrStat, ErrMsg, RoutineName ) ! would be nice to specify which line had the error
-   !        CALL CleanUp()
-   !        RETURN
-   !     END IF
+         if ( OptValue(1:1) == '-' ) EXIT
                      
-   !     CALL Conv2UC(OptString)
+         CALL Conv2UC(OptString)
 
-   !     ! check all possible options types and see if OptString is one of them, in which case set the variable.
-   !     if ( OptString == 'DTM') THEN
-   !       read (OptValue,*) InputData%dtM   ! InitInp%DTmooring
-   !    !  else if ( OptString == 'G') then
-   !    !    read (OptValue,*) InputData%g
-   !    !  else if ( OptString == 'RHOW') then
-   !    !    read (OptValue,*) InputData%rhoW
-   !    !  else if ( OptString == 'WTRDPTH') then
-   !    !    read (OptValue,*) InputData%WtrDpth
-   !     else if ( OptString == 'KBOT')  then
-   !       read (OptValue,*) InputData%kBot
-   !     else if ( OptString == 'CBOT')  then
-   !       read (OptValue,*) InputData%cBot
-   !     else if ( OptString == 'DTIC')  then
-   !       read (OptValue,*) InputData%dtIC
-   !     else if ( OptString == 'TMAXIC')  then
-   !       read (OptValue,*) InputData%TMaxIC
-   !     else if ( OptString == 'CDSCALEIC')  then
-   !       read (OptValue,*) InputData%CdScaleIC
-   !     else if ( OptString == 'THRESHIC')  then
-   !       read (OptValue,*) InputData%threshIC
-   !     else
-   !       CALL SetErrStat( ErrID_Warn, 'unable to interpret input '//trim(OptString), ErrStat, ErrMsg, RoutineName ) 
-   !     end if
+         ! check all possible options types and see if OptString is one of them, in which case set the variable.
+         if ( OptString == 'DTM') THEN
+            read (OptValue,*) InputData%dtM   ! InitInp%DTmooring
+         ! else if ( OptString == 'G') then
+         !    read (OptValue,*) InputData%g
+         ! else if ( OptString == 'RHOW') then
+         !    read (OptValue,*) InputData%rhoW
+         ! else if ( OptString == 'WTRDPTH') then
+         !    read (OptValue,*) InputData%WtrDpth
+         else if ( OptString == 'KBOT')  then
+            read (OptValue,*) InputData%kBot
+         else if ( OptString == 'CBOT')  then
+            read (OptValue,*) InputData%cBot
+         else if ( OptString == 'DTIC')  then
+            read (OptValue,*) InputData%dtIC
+         else if ( OptString == 'TMAXIC')  then
+            read (OptValue,*) InputData%TMaxIC
+         else if ( OptString == 'CDSCALEIC')  then
+            read (OptValue,*) InputData%CdScaleIC
+         else if ( OptString == 'THRESHIC')  then
+            read (OptValue,*) InputData%threshIC
+         else
+            exit
+            ! CALL SetErrStat( ErrID_Warn, 'unable to interpret input '//trim(OptString), ErrStat, ErrMsg, RoutineName ) 
+         end if
 
-   !    !  IF ( InitInp%Echo ) THEN
-   !    !     WRITE( UnEc, '(A)' ) TRIM(Line)
-   !    !  END IF
+      !  IF ( InitInp%Echo ) THEN
+      !     WRITE( UnEc, '(A)' ) TRIM(Line)
+      !  END IF
 
-   !   END DO
+       deallocate(array_temp)
+       LineNumber = LineNumber + 1
+     END DO
 
 
      !-------------------------------------------------------------------------------------------------
@@ -380,7 +377,7 @@ SUBROUTINE MDIO_ParseInputFileInfo( InFileInfo, EchoFileName, InputData, ErrStat
 
      END SUBROUTINE
 
-END SUBROUTINE
+END SUBROUTINE MDIO_ParseInputFileInfo
 ! ====================================================================================================
 SUBROUTINE MDIO_ValidateInputData(InputData, ErrStat, ErrMsg)
 
