@@ -42,6 +42,9 @@ MODULE NWTC_Base
    INTEGER(IntKi), PARAMETER     :: NWTC_Verbose = 10                             !< The maximum level of verbosity
    INTEGER(IntKi), PARAMETER     :: NWTC_VerboseLevel = 5                         !< a number in [0, NWTC_Verbose]: 0 = no output; NWTC_Verbose=verbose; 
 
+   INTEGER,        PARAMETER     :: IntfStrLen  = 1025                            !< Length of strings through C interfaces
+   INTEGER(IntKi), PARAMETER     :: NWTC_MAX_DLL_PROC  = 3                        !< maximum number of procedures that can be dynamically loaded from a DLL (see DLL_Type nwtc_base::dll_type)
+
       ! Global Error-level variables:
 
    INTEGER(IntKi), PARAMETER     :: ErrID_None   = 0                              !< ErrStat parameter indicating "no error"
@@ -51,10 +54,6 @@ MODULE NWTC_Base
    INTEGER(IntKi), PARAMETER     :: ErrID_Fatal  = 4                              !< ErrStat parameter indicating "fatal error"; simulation should end
 
    INTEGER(IntKi)                :: AbortErrLev  = ErrID_Fatal                    !< ErrStat that indicates the error level when program should end; ErrID_Fatal by default. Note that this is not a PARAMETER
-
-   
-   INTEGER(IntKi), PARAMETER     :: NWTC_MAX_DLL_PROC  = 3                        !< maximum number of procedures that can be dynamically loaded from a DLL (see DLL_Type nwtc_base::dll_type)
-   
 
       !> Type definition for dynamically loaded libraries:
       !! Note that changes here may need to be reflected in DLLTypePack() (nwtc_io::dlltypepack) DLLTypeUnPack() (nwtc_io::dlltypeunpack), 
