@@ -134,3 +134,11 @@ install(TARGETS nwtclibs
   EXPORT "${CMAKE_PROJECT_NAME}Libraries"
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib)
+
+
+set(SOURCES
+  test/Test_MeshMapping/Test_MeshMapping_Mod.f90
+  test/Test_MeshMapping/Test_MeshMapping.f90
+)
+add_executable(meshmapping_utest ${SOURCES})
+target_link_libraries(meshmapping_utest nwtclibs) # ${LAPACK_LIBRARIES} ${CMAKE_DL_LIBS})

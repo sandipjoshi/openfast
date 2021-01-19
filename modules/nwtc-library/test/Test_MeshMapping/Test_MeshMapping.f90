@@ -1,4 +1,9 @@
-   
+program MeshMappingTest
+
+call Test_TestMeshMapping()
+
+contains
+
 subroutine Test_TestMeshMapping()
 
    USE NWTC_Library
@@ -19,10 +24,8 @@ subroutine Test_TestMeshMapping()
    seed = 0
    call random_seed(SIZE=n1)
    CALL RANDOM_SEED (PUT = SEED (1 : n1))
-   
-   ! CALL NWTC_Init(  )   
-   
-   DO TestNumber=1,13
+
+   DO TestNumber=2,2
 
       debug_print = .false.
 
@@ -40,9 +43,7 @@ subroutine Test_TestMeshMapping()
       !   Mesh2_I (input) has motions
       !   Mesh2_O (output) has loads
       ! ..............................................................................................................................   
-      
-   
-   
+
       ! ..............................................................................................................................   
       ! Create output meshes: 
       !   Mesh1_O (output) has motions
@@ -55,7 +56,7 @@ subroutine Test_TestMeshMapping()
       CASE(1) ! 1 point to 5 points
          CALL CreateOutputMeshes_Test1()
       CASE(2) ! 'T' with resolution gain
-         CALL CreateOutputMeshes_Test2('A') ! was 'A'
+         CALL CreateOutputMeshes_Test2('A')
       CASE(3) ! 'T' with loss of resolution
          CALL CreateOutputMeshes_Test2('B')
       CASE(4) ! 'T' with equal nodes
@@ -81,15 +82,12 @@ subroutine Test_TestMeshMapping()
       END SELECT
    
       WRITE(BinOutputName,'(A,A,A)') 'Test', TRIM(Num2LStr(TestNumber)),'Meshes.bin'
-      
-   
-      ! ..............................................................................................................................   
+
+      ! ..............................................................................................................................
       ! Create sibling input meshes: 
       !   Mesh1_I (input) has loads
       !   Mesh2_I (input) has motions
-      ! ..............................................................................................................................   
-   
-   
+      ! ..............................................................................................................................
       CALL MeshCopy (        SrcMesh      = mesh1_O                &
                            , DestMesh     = mesh1_I                &
                            , CtrlCode     = MESH_SIBLING           &
@@ -99,9 +97,7 @@ subroutine Test_TestMeshMapping()
                            ,ErrStat       = ErrStat                &
                            ,ErrMess       = ErrMsg                 )   
                IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))
-   
-      !..............................
-   
+
       CALL MeshCopy (        SrcMesh          = mesh2_O          &
                            , DestMesh         = mesh2_I          &
                            , CtrlCode         = MESH_SIBLING     &
@@ -119,7 +115,6 @@ subroutine Test_TestMeshMapping()
       ! ..............................................................................................................................   
       ! Initialize the mapping data: 
       ! ..............................................................................................................................   
-
       CALL MeshMapCreate( Mesh1_O, Mesh2_I,     Map_Mod1_Mod2, ErrStat, ErrMsg );       IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))   
       CALL MeshMapCreate( Mesh2_O, Mesh1_I,     Map_Mod2_Mod1, ErrStat, ErrMsg );       IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))
       
@@ -516,8 +511,6 @@ call wrmatrix( LinVec_2 - LinVec_2_a           , 51, 'ES15.5' )
                ! Mesh1_O%RotationAcc = alpha^S|_op + delta alpha^S
             Mesh1_O%RotationAcc(:,i) = Mesh1_O_op%RotationAcc(:,i) + LinVec_1_d(j:j+2)
             
-            !IF (ErrStat /= ErrID_None) CALL WrScr("*******"//TRIM(ErrMsg))
-                        
          end do
          
 
@@ -530,7 +523,6 @@ call wrmatrix( LinVec_2 - LinVec_2_a           , 51, 'ES15.5' )
             LinVec_2(j:j+2) = Mesh2_I%TranslationAcc(:,i) - Mesh2_I_op%TranslationAcc(:,i)          
          end do
 
-         
          ! delta u^D
          do i=1,Mesh2_I%nnodes
             j = (i-1)*3 + 1
@@ -692,7 +684,6 @@ end if ! linearization or mapping test
       ! ..............................................................................................................................   
       ! Destroy data structures:
       ! ..............................................................................................................................   
-
       CALL MeshDestroy( mesh1_I, ErrStat, ErrMsg );       IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))
       CALL MeshDestroy( mesh1_O, ErrStat, ErrMsg );       IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))
       CALL MeshDestroy( mesh2_I, ErrStat, ErrMsg );       IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))
@@ -721,8 +712,7 @@ end if ! linearization or mapping test
       if (allocated(LinVec_2_a_tmp)) deallocate(LinVec_2_a_tmp)      
       
    end do
-              
-   
-   
-END subroutine Test_TestMeshMapping
 
+end subroutine Test_TestMeshMapping
+
+end program
