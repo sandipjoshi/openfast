@@ -3041,6 +3041,7 @@ SUBROUTINE Transfer_Loads_Point_to_Point( Src, Dest, MeshMap, ErrStat, ErrMsg, S
 !   REAL(R8Ki)                                     :: RotationMatrix(3,3)
    REAL(ReKi)                                     :: torque(3), DisplacedPosition(3)
    INTEGER(IntKi)                                 :: i         ! counter over the nodes
+   REAL(ReKi) :: inverse_LoadsScaleFactor
 
 
    ErrStat = ErrID_None
@@ -3057,6 +3058,8 @@ SUBROUTINE Transfer_Loads_Point_to_Point( Src, Dest, MeshMap, ErrStat, ErrMsg, S
 !   if Src%FieldMask(MASKID_FORCE),  Dest%FieldMask(MASKID_FORCE) and Dest%FieldMask(MASKID_MOMENT)
 !   if Src%FieldMask(MASKID_MOMENT), Dest%FieldMask(MASKID_MOMENT)
 
+   inverse_LoadsScaleFactor = 1 / LoadsScaleFactor
+
    if (Dest%FieldMask(MASKID_MOMENT) ) Dest%Moment = 0. ! whole array initialization; required to handle superposition of moments
    
    if (Src%FieldMask(MASKID_FORCE) ) THEN
@@ -3065,7 +3068,7 @@ SUBROUTINE Transfer_Loads_Point_to_Point( Src, Dest, MeshMap, ErrStat, ErrMsg, S
          !if ( MeshMap%MapLoads(i)%OtherMesh_Element < 1 )  CYCLE ! would only happen if we had non-point elements (or nodes not contained in an element)
          
          ! F_d += F_s
-         Dest%Force(:,MeshMap%MapLoads(i)%OtherMesh_Element) = Dest%Force(:,MeshMap%MapLoads(i)%OtherMesh_Element) + (Src%Force(:,i) / LoadsScaleFactor)
+         Dest%Force(:,MeshMap%MapLoads(i)%OtherMesh_Element) = Dest%Force(:,MeshMap%MapLoads(i)%OtherMesh_Element) + (Src%Force(:,i) * inverse_LoadsScaleFactor)
       end do
       Dest%Force  =  Dest%Force  * LoadsScaleFactor
       
@@ -3082,7 +3085,7 @@ SUBROUTINE Transfer_Loads_Point_to_Point( Src, Dest, MeshMap, ErrStat, ErrMsg, S
                                        - ( DestDisp%TranslationDisp(:,MeshMap%MapLoads(i)%OtherMesh_Element) &
                                          + DestDisp%Position(       :,MeshMap%MapLoads(i)%OtherMesh_Element) )                              
                ! calculation torque vector based on offset force: torque = couple_arm X Force   
-               torque = Src%Force(:,i) / LoadsScaleFactor !not torque yet, but we're doing this cross product in two step to avoid tempoary memory storage
+               torque = Src%Force(:,i) * inverse_LoadsScaleFactor !not torque yet, but we're doing this cross product in two step to avoid tempoary memory storage
                torque = CROSS_PRODUCT( DisplacedPosition, torque )
                Dest%Moment(:,MeshMap%MapLoads(i)%OtherMesh_Element) = Dest%Moment(:,MeshMap%MapLoads(i)%OtherMesh_Element) + torque                                             
          enddo
@@ -3097,7 +3100,7 @@ SUBROUTINE Transfer_Loads_Point_to_Point( Src, Dest, MeshMap, ErrStat, ErrMsg, S
       do i = 1, Src%NNodes
          !if ( MeshMap%MapLoads(i)%OtherMesh_Element < 1 )  CYCLE ! would only happen if we had non-point elements (or nodes not contained in an element)
 
-         Dest%Moment(:,MeshMap%MapLoads(i)%OtherMesh_Element) = Dest%Moment(:,MeshMap%MapLoads(i)%OtherMesh_Element) + (Src%Moment(:,i) / LoadsScaleFactor)
+         Dest%Moment(:,MeshMap%MapLoads(i)%OtherMesh_Element) = Dest%Moment(:,MeshMap%MapLoads(i)%OtherMesh_Element) + (Src%Moment(:,i) * inverse_LoadsScaleFactor)
       end do
                   
    endif
@@ -3679,7 +3682,7 @@ SUBROUTINE Transfer_Loads_Point_to_Line2( Src, Dest, MeshMap, ErrStat, ErrMsg, S
    INTEGER(IntKi)                                 :: ErrStat2
    CHARACTER(ErrMsgLen)                           :: ErrMsg2
    character(*), parameter                        :: RoutineName = 'Transfer_Loads_Point_to_Line2'
-   
+   REAL(ReKi) :: inverse_LoadsScaleFactor
    
    
    ErrStat = ErrID_None
@@ -3688,7 +3691,8 @@ SUBROUTINE Transfer_Loads_Point_to_Line2( Src, Dest, MeshMap, ErrStat, ErrMsg, S
       
    !> Start with transferring the loads like point-to-point (except split between two nodes of the dest element).
    ! [because the OtherMesh_Element is line2, we can't just call the routine here]
-         
+   inverse_LoadsScaleFactor = 1 / LoadsScaleFactor
+
    if ( Dest%FieldMask(MASKID_MOMENT) ) Dest%Moment = 0._ReKi     ! whole array initialization; required to handle superposition of loads
    
       ! ---------------------------- Force ------------------------------------------------
@@ -3705,7 +3709,7 @@ SUBROUTINE Transfer_Loads_Point_to_Line2( Src, Dest, MeshMap, ErrStat, ErrMsg, S
          jElem = MeshMap%MapLoads(i)%OtherMesh_Element
          DO j = 1,2 ! number of nodes on dest 
             jNode = Dest%ElemTable(ELEMENT_LINE2)%Elements(jElem)%ElemNodes(j)
-            Dest%Force(:,jNode) = Dest%Force(:,jNode) + (Src%Force(:,i)/LoadsScaleFactor)*MeshMap%MapLoads(i)%shape_fn(j)             
+            Dest%Force(:,jNode) = Dest%Force(:,jNode) + Src%Force(:,i) * inverse_LoadsScaleFactor * MeshMap%MapLoads(i)%shape_fn(j)
          END DO !j
 
       END DO !loop through source nodes
@@ -3729,7 +3733,7 @@ SUBROUTINE Transfer_Loads_Point_to_Line2( Src, Dest, MeshMap, ErrStat, ErrMsg, S
                DisplacedPosition =   Src%Position(:,i)     +  SrcDisp%TranslationDisp(:,i)     &
                                   - Dest%Position(:,jNode) - DestDisp%TranslationDisp(:,jNode)  
                               
-               torque = Src%Force(:,i) / LoadsScaleFactor !not torque yet, but we're doing this cross product in two steps to avoid tempoary memory storage
+               torque = Src%Force(:,i) * inverse_LoadsScaleFactor !not torque yet, but we're doing this cross product in two steps to avoid tempoary memory storage
                torque = CROSS_PRODUCT( DisplacedPosition, torque )               
                Dest%Moment(:,jNode) = Dest%Moment(:,jNode) + torque*MeshMap%MapLoads(i)%shape_fn(j)            
             END DO !j
@@ -3755,7 +3759,7 @@ SUBROUTINE Transfer_Loads_Point_to_Line2( Src, Dest, MeshMap, ErrStat, ErrMsg, S
          jElem = MeshMap%MapLoads(i)%OtherMesh_Element
          DO j = 1,2 ! number of nodes on dest 
             jNode = Dest%ElemTable(ELEMENT_LINE2)%Elements(jElem)%ElemNodes(j)
-            Dest%Moment(:,jNode) = Dest%Moment(:,jNode) + (Src%Moment(:,i)/LoadsScaleFactor)*MeshMap%MapLoads(i)%shape_fn(j)             
+            Dest%Moment(:,jNode) = Dest%Moment(:,jNode) + Src%Moment(:,i) * inverse_LoadsScaleFactor * MeshMap%MapLoads(i)%shape_fn(j)
          END DO !j
 
       END DO !loop through source nodes
@@ -4113,7 +4117,7 @@ SUBROUTINE Convert_Point_To_Line2_Loads(Dest, MeshMap, ErrStat, ErrMsg, DestDisp
             n1=Dest%ElemTable(ELEMENT_LINE2)%Elements(jElem)%ElemNodes(1)
             n2=Dest%ElemTable(ELEMENT_LINE2)%Elements(jElem)%ElemNodes(2)
             
-            c = Dest%ElemTable(ELEMENT_LINE2)%Elements(jElem)%det_jac/6.0_ReKi  ! this contains an extra factor of 1/2, which comes from omitting it from the a_vec term
+            c = Dest%ElemTable(ELEMENT_LINE2)%Elements(jElem)%det_jac * one_sixth  ! this contains an extra factor of 1/2, which comes from omitting it from the a_vec term
                                                 
             a_vec =   ( DestDisp%Position(:,n2) + DestDisp%TranslationDisp(:,n2) ) &
                     - ( DestDisp%Position(:,n1) + DestDisp%TranslationDisp(:,n1) )
@@ -4352,7 +4356,7 @@ SUBROUTINE Create_Augmented_Ln2_Src_Mesh(Src, Dest, MeshMap, Dest_TYPE, ErrStat,
                 - Temp_Ln2_Src%Position(:, Temp_Ln2_Src%ElemTable(ELEMENT_LINE2)%Elements(iElem)%ElemNodes(1))
          
          IF ( Dest_TYPE == ELEMENT_POINT ) p_eD = p_eS
-         denom = DOT_PRODUCT( p_eD , p_eS )
+         denom = 1 / DOT_PRODUCT( p_eD , p_eS )
             
   
          IF ( .NOT. EqualRealNos( denom, 0.0_ReKi) ) THEN ! we ignore source elements that are parallel to the destination element (i.e., denom == 0)
@@ -4360,7 +4364,7 @@ SUBROUTINE Create_Augmented_Ln2_Src_Mesh(Src, Dest, MeshMap, Dest_TYPE, ErrStat,
                n1S_nD_vector =            dest%Position(:, dest%ElemTable(Dest_TYPE)%Elements(jElem)%ElemNodes(jNode)) &
                                 - Temp_Ln2_Src%Position(:, Temp_Ln2_Src%ElemTable(ELEMENT_LINE2)%Elements(iElem)%ElemNodes(1))
                
-               elem_position = DOT_PRODUCT( p_eD, n1S_nD_vector ) / denom                 ! Eq 37 (AIAA 2015 paper)
+               elem_position = DOT_PRODUCT( p_eD, n1S_nD_vector ) * denom                 ! Eq 37 (AIAA 2015 paper)
                
 !bjj: todo: we need to set this TOL based on actual distances, not relative values (0,1) on an element....                 
 !  for now, I've calculated the element length inside this tolerance and reserve the right to reject new nodes that create 0-length elements.
@@ -4379,10 +4383,10 @@ SUBROUTINE Create_Augmented_Ln2_Src_Mesh(Src, Dest, MeshMap, Dest_TYPE, ErrStat,
                                           
                   p_eS  = Src%Position(:, n2) - Src%Position(:, n1)
                   IF ( Dest_TYPE == ELEMENT_POINT ) p_eD_orig = p_eS
-                  denom_orig = DOT_PRODUCT( p_eD_orig , p_eS )   ! we don't need to check that this is zero because it's just a shorter version of the temp Temp_Ln2_Src element
+                  denom_orig = 1 / DOT_PRODUCT( p_eD_orig , p_eS )   ! we don't need to check that this is zero because it's just a shorter version of the temp Temp_Ln2_Src element
                   n1S_nD_vector =   dest%Position(:, dest%ElemTable(Dest_TYPE)%Elements(jElem)%ElemNodes(jNode)) &
                                    - Src%Position(:, n1 )
-                  shape_fn2(Aug_Nnodes) = DOT_PRODUCT( p_eD_orig, n1S_nD_vector ) / denom_orig       ! save this for later, when we need to map the mesh fields...
+                  shape_fn2(Aug_Nnodes) = DOT_PRODUCT( p_eD_orig, n1S_nD_vector ) * denom_orig       ! save this for later, when we need to map the mesh fields...
                   
                      ! interpolate position on the original souce element:                     
                      
@@ -4634,10 +4638,11 @@ SUBROUTINE Transfer_Src_To_Augmented_Ln2_Src( Src, MeshMap, ErrStat, ErrMsg, Src
    CHARACTER(*),                   INTENT(  OUT)  :: ErrMsg                      !< Error message if ErrStat /= ErrID_None
    TYPE(MeshType),                 INTENT(IN   )  :: SrcDisp                     !< The displacements associated with the source mesh
    REAL(ReKi),                     INTENT(IN)     :: LoadsScaleFactor            !< Scaling factor for loads (to help with numerical issues)
-
-      ! local variables
+   
+   ! local variables
    INTEGER(IntKi)                                 :: iElem, i  ! do-loop counter for nodes/elements on source   
    INTEGER(IntKi)                                 :: n1, n2
+   REAL(ReKi) :: inverse_LoadsScaleFactor
    
    ErrStat = ErrID_None
    ErrMsg  = ""
@@ -4645,7 +4650,7 @@ SUBROUTINE Transfer_Src_To_Augmented_Ln2_Src( Src, MeshMap, ErrStat, ErrMsg, Src
    !.......................................
    ! TranslationDisp (from external mesh to augmented one)
    !.......................................
-   
+   inverse_LoadsScaleFactor = 1 / LoadsScaleFactor
    IF ( SrcDisp%FIELDMASK(MASKID_TranslationDisp) ) THEN      
    
       DO i = 1,Src%NNodes  !in case SrcDisp has more nodes that Src (e.g. ElastoDyn blade and tower meshes), I'm using Src%NNodes here
@@ -4681,9 +4686,7 @@ SUBROUTINE Transfer_Src_To_Augmented_Ln2_Src( Src, MeshMap, ErrStat, ErrMsg, Src
          n1=Src%ElemTable(ELEMENT_LINE2)%Elements(iElem)%ElemNodes(1)
          n2=Src%ElemTable(ELEMENT_LINE2)%Elements(iElem)%ElemNodes(2)
          
-         MeshMap%Augmented_Ln2_Src%Force(:,i) = MeshMap%MapSrcToAugmt(i)%shape_fn(1) * (Src%Force(:, n1)/LoadsScaleFactor) &
-                                              + MeshMap%MapSrcToAugmt(i)%shape_fn(2) * (Src%Force(:, n2)/LoadsScaleFactor)   
-         
+         MeshMap%Augmented_Ln2_Src%Force(:,i) = MeshMap%MapSrcToAugmt(i)%shape_fn(1) * Src%Force(:, n1) * inverse_LoadsScaleFactor + MeshMap%MapSrcToAugmt(i)%shape_fn(2) * Src%Force(:, n2) * inverse_LoadsScaleFactor
          MeshMap%Augmented_Ln2_Src%Force(:,i) = MeshMap%Augmented_Ln2_Src%Force(:,i)*LoadsScaleFactor
                                                                                                             
       END DO
@@ -4707,9 +4710,7 @@ SUBROUTINE Transfer_Src_To_Augmented_Ln2_Src( Src, MeshMap, ErrStat, ErrMsg, Src
          n1=Src%ElemTable(ELEMENT_LINE2)%Elements(iElem)%ElemNodes(1)
          n2=Src%ElemTable(ELEMENT_LINE2)%Elements(iElem)%ElemNodes(2)
          
-         MeshMap%Augmented_Ln2_Src%Moment(:,i) = MeshMap%MapSrcToAugmt(i)%shape_fn(1) * (Src%Moment(:, n1)/LoadsScaleFactor) &
-                                               + MeshMap%MapSrcToAugmt(i)%shape_fn(2) * (Src%Moment(:, n2)/LoadsScaleFactor)   
-         
+         MeshMap%Augmented_Ln2_Src%Moment(:,i) = MeshMap%MapSrcToAugmt(i)%shape_fn(1) * Src%Moment(:, n1) * inverse_LoadsScaleFactor + MeshMap%MapSrcToAugmt(i)%shape_fn(2) * Src%Moment(:, n2) * inverse_LoadsScaleFactor         
          MeshMap%Augmented_Ln2_Src%Moment(:,i) = MeshMap%Augmented_Ln2_Src%Moment(:,i)*LoadsScaleFactor
          
                                                                                                             
@@ -4882,7 +4883,7 @@ SUBROUTINE Create_InverseLumping_Matrix( Dest, MeshMap, ErrStat, ErrMsg )
       n1 = Dest%ElemTable(ELEMENT_LINE2)%Elements(iElem)%ElemNodes(1)
       n2 = Dest%ElemTable(ELEMENT_LINE2)%Elements(iElem)%ElemNodes(2)
 
-      c    = Dest%ElemTable(ELEMENT_LINE2)%Elements(iElem)%det_jac / 3.0_ReKi  != TwoNorm( p(n2)-p(n1) )/6
+      c    = Dest%ElemTable(ELEMENT_LINE2)%Elements(iElem)%det_jac * one_third  != TwoNorm( p(n2)-p(n1) )/6
       TwoC = 2.0_ReKi * c
 
       do iComp=1,3 !3 components of force
@@ -5049,6 +5050,7 @@ SUBROUTINE Lump_Line2_to_Point( Line2_Src, Point_Dest, ErrStat, ErrMsg, SrcDisp,
 
    INTEGER(IntKi) :: i
    INTEGER(IntKi) :: nnodes
+   REAL(ReKi) :: inverse_LoadsScaleFactor
 
    INTEGER(IntKi) :: n1
    INTEGER(IntKi) :: n2
@@ -5057,6 +5059,8 @@ SUBROUTINE Lump_Line2_to_Point( Line2_Src, Point_Dest, ErrStat, ErrMsg, SrcDisp,
 
    ErrStat = ErrID_None
    ErrMsg = ""
+
+   inverse_LoadsScaleFactor = 1.0 / LoadsScaleFactor
 
 #ifdef MESH_DEBUG     
    ! bjj: we shouldn't have to check this in production mode; this routine is an internal one only.
@@ -5115,20 +5119,20 @@ SUBROUTINE Lump_Line2_to_Point( Line2_Src, Point_Dest, ErrStat, ErrMsg, SrcDisp,
       !
       !det_jac_Ovr3 = SQRT( DOT_PRODUCT(n1_n2_vector,n1_n2_vector) ) / 6._ReKi  = L / 6 = det_jac/3.
 
-      det_jac_Ovr3 = Line2_Src%ElemTable(ELEMENT_LINE2)%Elements(i)%det_jac / 3.0_ReKi
+      det_jac_Ovr3 = Line2_Src%ElemTable(ELEMENT_LINE2)%Elements(i)%det_jac * one_third
 
 
       if (Point_Dest%FieldMask(MASKID_FORCE) ) then
 
-         Point_Dest%Force(:,n1) = Point_Dest%Force(:,n1) + det_jac_Ovr3 * ( 2.*(Line2_Src%Force(:,n1)/LoadsScaleFactor) +    (Line2_Src%Force(:,n2)/LoadsScaleFactor) )
-         Point_Dest%Force(:,n2) = Point_Dest%Force(:,n2) + det_jac_Ovr3 * (    (Line2_Src%Force(:,n1)/LoadsScaleFactor) + 2.*(Line2_Src%Force(:,n2)/LoadsScaleFactor) )
+         Point_Dest%Force(:,n1) = Point_Dest%Force(:,n1) + det_jac_Ovr3 * ( 2.*(Line2_Src%Force(:,n1) * inverse_LoadsScaleFactor) +    (Line2_Src%Force(:,n2) * inverse_LoadsScaleFactor) )
+         Point_Dest%Force(:,n2) = Point_Dest%Force(:,n2) + det_jac_Ovr3 * (    (Line2_Src%Force(:,n1) * inverse_LoadsScaleFactor) + 2.*(Line2_Src%Force(:,n2) * inverse_LoadsScaleFactor) )
 
       endif
 
       if (Point_Dest%FieldMask(MASKID_MOMENT) ) then
 
-         Point_Dest%Moment(:,n1) = Point_Dest%Moment(:,n1) + det_jac_Ovr3 * ( 2.*(Line2_Src%Moment(:,n1)/LoadsScaleFactor) +    (Line2_Src%Moment(:,n2)/LoadsScaleFactor) )
-         Point_Dest%Moment(:,n2) = Point_Dest%Moment(:,n2) + det_jac_Ovr3 * (    (Line2_Src%Moment(:,n1)/LoadsScaleFactor) + 2.*(Line2_Src%Moment(:,n2)/LoadsScaleFactor) )
+         Point_Dest%Moment(:,n1) = Point_Dest%Moment(:,n1) + det_jac_Ovr3 * ( 2.*(Line2_Src%Moment(:,n1) * inverse_LoadsScaleFactor) +    (Line2_Src%Moment(:,n2) * inverse_LoadsScaleFactor) )
+         Point_Dest%Moment(:,n2) = Point_Dest%Moment(:,n2) + det_jac_Ovr3 * (    (Line2_Src%Moment(:,n1) * inverse_LoadsScaleFactor) + 2.*(Line2_Src%Moment(:,n2) * inverse_LoadsScaleFactor) )
 
 
          if ( Point_Dest%FieldMask(MASKID_FORCE) ) then
@@ -5145,7 +5149,7 @@ SUBROUTINE Lump_Line2_to_Point( Line2_Src, Point_Dest, ErrStat, ErrMsg, SrcDisp,
             END IF
 
             dp = p2-p1
-            pCrossf = (Line2_Src%Force(:,n1)/LoadsScaleFactor) + (Line2_Src%Force(:,n2)/LoadsScaleFactor) !temp storage of f to avoid array creating in cross_product
+            pCrossf = (Line2_Src%Force(:,n1) * inverse_LoadsScaleFactor) + (Line2_Src%Force(:,n2) * inverse_LoadsScaleFactor) !temp storage of f to avoid array creating in cross_product
             pCrossf = 0.5*det_jac_Ovr3 *cross_product( dp, pCrossf)
 
             Point_Dest%Moment(:,n1) = Point_Dest%Moment(:,n1) + pCrossf
@@ -5187,9 +5191,9 @@ SUBROUTINE Linearize_Lump_Line2_to_Point( Line2_Src, Point_Dest, dM, ErrStat, Er
 
    ErrStat = ErrID_None
    ErrMsg = ""
-         
-      ! identity for forces and/or moments:
 
+      ! identity for forces and/or moments:
+         
    !> Matrix \f$ M_{li}^{SL} \f$, stored in modmesh_mapping::meshmaplinearizationtype::li,
    !! is allocated to be size Point_Dest\%NNodes*3, Line2_Src\%NNodes*3 (a square matrix).
    !! This is the block matrix that maps each field of the distributed source mesh to its identical field on the point (lumped) mesh. 
@@ -5213,7 +5217,7 @@ SUBROUTINE Linearize_Lump_Line2_to_Point( Line2_Src, Point_Dest, dM, ErrStat, Er
       n1 = Line2_Src%ElemTable(ELEMENT_LINE2)%Elements(i)%ElemNodes(1)
       n2 = Line2_Src%ElemTable(ELEMENT_LINE2)%Elements(i)%ElemNodes(2)
          
-      c    = Line2_Src%ElemTable(ELEMENT_LINE2)%Elements(i)%det_jac / 3.0_R8Ki  != TwoNorm( p(n2)-p(n1) )/6 = det_jac/3
+      c    = Line2_Src%ElemTable(ELEMENT_LINE2)%Elements(i)%det_jac * one_third  != TwoNorm( p(n2)-p(n1) )/6 = det_jac/3
       TwoC = 2.0_R8Ki * c
 
       do iComp=1,3 !3 components of force or moment
@@ -5256,7 +5260,7 @@ SUBROUTINE Linearize_Lump_Line2_to_Point( Line2_Src, Point_Dest, dM, ErrStat, Er
             n1 = Line2_Src%ElemTable(ELEMENT_LINE2)%Elements(i)%ElemNodes(1)
             n2 = Line2_Src%ElemTable(ELEMENT_LINE2)%Elements(i)%ElemNodes(2)
         
-            c = Line2_Src%ElemTable(ELEMENT_LINE2)%Elements(i)%det_jac / 3.0_ReKi  != TwoNorm( p(n2)-p(n1) )/6 = det_jac_Ovr3
+            c = Line2_Src%ElemTable(ELEMENT_LINE2)%Elements(i)%det_jac * one_third  != TwoNorm( p(n2)-p(n1) )/6 = det_jac_Ovr3
                            
             Point_Dest%Force(:,n1) = Point_Dest%Force(:,n1) + c * ( 2.0_ReKi*Line2_Src%Force(:,n1) +    Line2_Src%Force(:,n2) )
             Point_Dest%Force(:,n2) = Point_Dest%Force(:,n2) + c * (    Line2_Src%Force(:,n1) + 2.0_ReKi*Line2_Src%Force(:,n2) )
@@ -5339,7 +5343,7 @@ SUBROUTINE FormMatrix_Lump_Line2_to_Point( Mesh, dM, ErrStat, ErrMsg, DispMesh )
          n2_start = (n2 - 1)*3+1
          n2_end   = n2_start+2
                   
-         c    = Mesh%ElemTable(ELEMENT_LINE2)%Elements(i)%det_jac / 6.0_ReKi  != TwoNorm( p(n2)-p(n1) )/12 
+         c    = Mesh%ElemTable(ELEMENT_LINE2)%Elements(i)%det_jac * one_sixth  != TwoNorm( p(n2)-p(n1) )/12 
 
             ! dM%m_uS (portion that gets multiplied by u [TranslationDisp])
          

@@ -58,10 +58,9 @@ SUBROUTINE Morison_DirCosMtrx( pos0, pos1, DirCos )
 
    REAL(ReKi), INTENT( IN    )  ::   pos0(3), pos1(3)
    Real(ReKi), INTENT(   OUT )  ::   DirCos(3,3)
-   Real(DbKi)                   ::   xz, xyz
+   Real(DbKi)                   ::   xz, inverse_xz, inverse_xyz
    Real(DbKi)                   ::   x0, y0, z0
    Real(DbKi)                   ::   x1, y1, z1
-!   Real(DbKi)                   ::   temp
 
    x0 = pos0(1)
    y0 = pos0(2)
@@ -69,49 +68,38 @@ SUBROUTINE Morison_DirCosMtrx( pos0, pos1, DirCos )
    x1 = pos1(1)
    y1 = pos1(2)
    z1 = pos1(3)
-   
-      ! Need to verify that z0 <= z1, but this was already handled in the element construction process!!! GJH 9/24/13 
-   !IF ( z0 > z1 ) THEN
-   !   temp = x0
-   !   x0   = x1
-   !   x1   = temp
-   !   temp = y0
-   !   y0   = y1
-   !   y1   = temp
-   !   temp = z0
-   !   z0   = z1
-   !   z1   = temp
-   !END IF
-   
-   xz  = sqrt((x0-x1)*(x0-x1)+(z0-z1)*(z0-z1))
-   xyz = sqrt((x0-x1)*(x0-x1)+(y0-y1)*(y0-y1)+(z0-z1)*(z0-z1))
-   
+
+   xz = sqrt( (x0-x1) * (x0-x1) + (z0-z1) * (z0-z1) )
+
    IF ( xz==0 ) THEN
-      
+
       IF (y1<y0) THEN
-         
+
          DirCos = transpose(reshape((/ 1, 0, 0, 0, 0, -1, 0, 1, 0 /), shape(DirCos)))
-          
+
       ELSE
-         
+
          DirCos = transpose(reshape((/ 1, 0, 0, 0, 0, 1, 0, -1, 0 /), shape(DirCos)))
-         
+
       END IF
-      
+
    ELSE
-      
-      DirCos(1, 1) = -(z0-z1)/xz
-      DirCos(1, 2) = -(x0-x1)*(y0-y1)/(xz*xyz)
-      DirCos(1, 3) = (x1-x0)/xyz
-      
+
+      inverse_xz = 1 / sqrt( (x0-x1) * (x0-x1) + (z0-z1) * (z0-z1) )
+      inverse_xyz = 1 / sqrt( (x0-x1) * (x0-x1) + (y0-y1) * (y0-y1) + (z0-z1) * (z0-z1) )
+
+      DirCos(1, 1) = -(z0-z1) * inverse_xz
+      DirCos(1, 2) = -(x0-x1)*(y0-y1) * inverse_xz * inverse_xyz
+      DirCos(1, 3) = (x1-x0) * inverse_xyz
+
       DirCos(2, 1) = 0.0
-      DirCos(2, 2) = xz/xyz
-      DirCos(2, 3) = (y1-y0)/xyz
-      
-      DirCos(3, 1) = -(x1-x0)/xz
-      DirCos(3, 2) = -(y0-y1)*(z0-z1)/(xz*xyz)
-      DirCos(3, 3) = (z1-z0)/xyz
-      
+      DirCos(2, 2) = xz * inverse_xyz
+      DirCos(2, 3) = (y1-y0) * inverse_xyz
+
+      DirCos(3, 1) = -(x1-x0) * inverse_xz
+      DirCos(3, 2) = -(y0-y1) * (z0-z1) * inverse_xyz
+      DirCos(3, 3) = (z1-z0) * inverse_xyz
+
       ! DEBUG:  TODO : Remove
       !PRINT*, sqrt(DirCos(1,1)*DirCos(1,1) + DirCos(1,2)*DirCos(1,2)+DirCos(1,3)*DirCos(1,3))
       !PRINT*, sqrt(DirCos(2,1)*DirCos(2,1) + DirCos(2,2)*DirCos(2,2)+DirCos(2,3)*DirCos(2,3))
@@ -161,7 +149,7 @@ REAL(ReKi) FUNCTION ElementVolume ( Rs, Re, h )
    REAL(ReKi), INTENT ( IN    )  :: Re          ! ending radius
    REAL(ReKi), INTENT ( IN    )  :: h           ! height of the element
    
-   ElementVolume = Pi*h*( Rs*Rs + Re*Re + Rs*Re  ) / 3.0
+   ElementVolume = Pi*h*( Rs*Rs + Re*Re + Rs*Re  ) * one_third
    
 END FUNCTION ElementVolume
 
@@ -2778,7 +2766,7 @@ SUBROUTINE CreateLumpedMesh( densWater, gravity, MSL2SWL, wtrDpth, NStepWave, Wa
    INTEGER, ALLOCATABLE       :: nodeToLumpedIndx(:)
    INTEGER, ALLOCATABLE       :: commonNodeLst(:)
    LOGICAL, ALLOCATABLE       :: usedJointList(:)
-   INTEGER                    :: nCommon
+   INTEGER                    :: nCommon, invNCommon
 !   REAL(ReKi)                 :: CA
    REAL(ReKi)                 :: AMfactor
    REAL(ReKi)                 :: An(3), Vn(3), af(3)
@@ -3063,11 +3051,12 @@ SUBROUTINE CreateLumpedMesh( densWater, gravity, MSL2SWL, wtrDpth, NStepWave, Wa
                         AM_M(1:3,1:3) = (nodes(I)%JAxCa*AMfactor/(REAL( nCommon, ReKi)*Vmag) )*MatMul(Vmat,TRANSPOSE(Vmat))
                      END IF
                      
+                     invNCommon = 1/nCommon
                      DO J=1,nCommon
                      
                         IF ( nodes(I)%JointPos(3) >= z0 ) THEN
                         
-                           L_An  (:,  nodeToLumpedIndx(commonNodeLst(J)))    =  An / nCommon   
+                           L_An  (:,  nodeToLumpedIndx(commonNodeLst(J)))    =  An * invNCommon   
                            L_AM_M(:,:,nodeToLumpedIndx(commonNodeLst(J)))    =  AM_M
                            
                            DO M=0,NStepWave
@@ -3937,11 +3926,11 @@ SUBROUTINE Morison_ProcessMorisonGeometry( InitInp, ErrStat, ErrMsg )
          END IF
          
          propSet = InitInp%MPropSets(prop1Indx)
-         InitInp%Elements(I)%R1               = propSet%PropD / 2.0
+         InitInp%Elements(I)%R1               = propSet%PropD * 0.5_ReKi
          InitInp%Elements(I)%t1               = propSet%PropThck
          
          propSet = InitInp%MPropSets(prop2Indx)
-         InitInp%Elements(I)%R2               = propSet%PropD / 2.0
+         InitInp%Elements(I)%R2               = propSet%PropD * 0.5_ReKi
          InitInp%Elements(I)%t2               = propSet%PropThck 
          
          InitInp%Elements(I)%NumSplits        = InitInp%InpMembers(I)%NumSplits
@@ -4568,20 +4557,21 @@ SUBROUTINE Morison_CalcOutput( Time, u, p, x, xd, z, OtherState, y, m, ErrStat, 
        
          
          ! Determine the dynamic pressure at the marker
-         m%D_FDynP(J) = InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime(:), p%WaveDynP(:,nodeIndx), &
+         m%D_FDynP(J) = InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime, p%WaveDynP(:,nodeIndx), &
                                     m%LastIndWave, p%NStepWave + 1 )
+
          
             
          DO I=1,3
                ! Determine the fluid acceleration and velocity at the marker
-            m%D_FA(I,J) = InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime(:), p%WaveAcc(:,nodeIndx,I), &
+            m%D_FA(I,J) = InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime, p%WaveAcc(:,nodeIndx,I), &
                                     m%LastIndWave, p%NStepWave + 1       )
-            m%D_FV(I,J) = InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime(:), p%WaveVel(:,nodeIndx,I), &
+            m%D_FV(I,J) = InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime, p%WaveVel(:,nodeIndx,I), &
                                     m%LastIndWave, p%NStepWave + 1       )
             
             vrel(I) =  m%D_FV(I,J) - u%DistribMesh%TranslationVel(I,J)
             
-            m%D_F_I(I,J) = elementWaterState * InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime(:), p%D_F_I(:,I,J), &
+            m%D_F_I(I,J) = elementWaterState * InterpWrappedStpReal ( REAL(Time, SiKi), p%WaveTime, p%D_F_I(:,I,J), &
                                     m%LastIndWave, p%NStepWave + 1       )
          END DO
          
@@ -4592,10 +4582,8 @@ SUBROUTINE Morison_CalcOutput( Time, u, p, x, xd, z, OtherState, y, m, ErrStat, 
          
                    
             ! Distributed added mass loads
-            ! need to multiply by elementInWater value to zero out loads when out of water 
-         qdotdot2(1)    =       elementWaterState *u%DistribMesh%TranslationAcc(1,J)
-         qdotdot2(2)    =       elementWaterState *u%DistribMesh%TranslationAcc(2,J)
-         qdotdot2(3)    =       elementWaterState *u%DistribMesh%TranslationAcc(3,J)
+            ! need to multiply by elementInWater value to zero out loads when out of water
+         qdotdot2 =  elementWaterState *u%DistribMesh%TranslationAcc(:,J)
             ! calculated the added mass forces (moments are zero)
          m%D_F_AM_M(1:3,J)  = -matmul( p%D_AM_M (:,:,J) , qdotdot2 )  !bjj: these lines take up a lot of time. are the matrices sparse?
 
@@ -4613,9 +4601,6 @@ SUBROUTINE Morison_CalcOutput( Time, u, p, x, xd, z, OtherState, y, m, ErrStat, 
                y%DistribMesh%Moment(I-3,J) =   m%D_F_B(I,J) + p%D_F_BF(I,J)     
             END IF
          END DO  ! DO I
-         
-         
-         
       ENDDO
 
       

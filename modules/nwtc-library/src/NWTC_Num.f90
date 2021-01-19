@@ -62,6 +62,10 @@ MODULE NWTC_Num
    REAL(SiKi)                                :: TwoPi_R4                      !< 2*pi in 4-byte precision
    REAL(R8Ki)                                :: TwoPi_R8                      !< 2*pi in 8-byte precision
    REAL(QuKi)                                :: TwoPi_R16                     !< 2*pi in 16-byte precision
+   
+   REAL(ReKi)                                :: one_third = 1.0_ReKi / 3.0_ReKi  !< 1.0 / 3.0
+   REAL(ReKi)                                :: one_sixth = 1.0_ReKi / 6.0_ReKi  !< 1.0 / 6.0
+
 !=======================================================================
 
       ! Create interfaces for generic routines that use specific routines.
