@@ -53,8 +53,16 @@ add_library(openfast_postlib
   )
 target_link_libraries(openfast_postlib openfast_prelib scfastlib foamfastlib versioninfolib)
 
-add_library(openfastlib src/FAST_Library.f90 src/FAST_OpenFOAM.f90)
-target_link_libraries(openfastlib openfast_postlib openfast_prelib scfastlib foamfastlib)
+set(FASTLIB_SOURCES src/FAST_Library.f90)
+if(BUILD_OPENFAST_CPP_API)
+  list(APPEND FASTLIB_SOURCES src/FAST_OpenFOAM.f90)
+endif()
+add_library(openfastlib ${FASTLIB_SOURCES})
+
+target_link_libraries(openfastlib openfast_postlib openfast_prelib scfastlib)
+if(BUILD_OPENFAST_CPP_API)
+  target_link_libraries(openfastlib foamfastlib)
+endif()
 
 string(TOUPPER ${CMAKE_Fortran_COMPILER_ID} _compiler_id)
 string(TOUPPER ${CMAKE_BUILD_TYPE} _build_type)
