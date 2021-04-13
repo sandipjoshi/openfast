@@ -123,6 +123,18 @@ macro(set_fast_gfortran)
     set( CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} -fcheck=all,no-array-temps -pedantic -fbacktrace -finit-real=inf -finit-integer=9999." )
   endif()
 
+  # Configure measuring code coverage in tests
+  if(CODECOV)
+    # --coverage is a GNU flag
+    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} --coverage")
+    if(CMAKE_CXX_COMPILER_ID MATCHES GNU)
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage")
+    endif()
+    if(CMAKE_C_COMPILER_ID MATCHES GNU)
+      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --coverage")
+    endif()
+  endif()
+
   if(CYGWIN)
     # increase the default 2MB stack size to 16 MB
     MATH(EXPR stack_size "16 * 1024 * 1024")
