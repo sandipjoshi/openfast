@@ -65,6 +65,7 @@ jobs:
         run: |
           cmake --build . --target aerodyn_driver -- -j ${{env.NUM_PROCS}}
           cmake --build . --target beamdyn_driver -- -j ${{env.NUM_PROCS}}
+          cmake --build . --target hydrodyn_driver -- -j ${{env.NUM_PROCS}}
 
       - name: Run AeroDyn tests
         uses: ./.github/actions/tests-module-aerodyn
@@ -74,8 +75,8 @@ jobs:
         uses: ./.github/actions/tests-module-beamdyn
         with:
           test-target: regression
-      # - name: Run HydroDyn tests
-      #   uses: ./.github/actions/tests-module-hydrodyn
+      - name: Run HydroDyn tests
+        uses: ./.github/actions/tests-module-hydrodyn
       # - name: Run InflowWind tests
       #   uses: ./.github/actions/tests-module-inflowwind
       # - name: Run NWTC Library tests
