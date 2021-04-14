@@ -1,5 +1,5 @@
 codecov:
   disable_default_path_fixes: no
 
-fixes:
-  - "/home/runner/work/::"
+# fixes:
+#   - "/home/runner/work/::"
