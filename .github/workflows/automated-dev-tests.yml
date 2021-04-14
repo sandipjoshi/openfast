@@ -53,6 +53,7 @@ jobs:
             -DCMAKE_BUILD_TYPE:STRING=Debug \
             -DBUILD_TESTING:BOOL=ON \
             -DCODECOV:BOOL=ON \
+            -DUNIT_TEST:BOOL=OFF \
             -DCTEST_PLOT_ERRORS:BOOL=ON \
             ${GITHUB_WORKSPACE}
       - name: Build OpenFAST
@@ -60,15 +61,19 @@ jobs:
         working-directory: ${{runner.workspace}}/openfast/build
         run: |
           cmake --build . --target aerodyn_driver  -- -j ${{env.NUM_PROCS}}
+          cmake --build . --target beamdyn_driver  -- -j ${{env.NUM_PROCS}}
+          cmake --build . --target hydrodyn_driver  -- -j ${{env.NUM_PROCS}}
 
       - name: Run AeroDyn tests
         uses: ./.github/actions/tests-module-aerodyn
         with:
           test-target: regression
-      # - name: Run BeamDyn tests
-      #   uses: ./.github/actions/tests-module-beamdyn
-      # - name: Run HydroDyn tests
-      #   uses: ./.github/actions/tests-module-hydrodyn
+      - name: Run BeamDyn tests
+        uses: ./.github/actions/tests-module-beamdyn
+        with:
+          test-target: regression
+      - name: Run HydroDyn tests
+        uses: ./.github/actions/tests-module-hydrodyn
       # - name: Run InflowWind tests
       #   uses: ./.github/actions/tests-module-inflowwind
       # - name: Run NWTC Library tests
