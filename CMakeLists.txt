@@ -48,13 +48,25 @@ endif()
 # Do this before configuring modules so that the flags are included
 option(BUILD_TESTING "Build the testing tree." OFF)
 if(BUILD_TESTING)
-  option(CODECOV "Enable infrastructure for measuring code coverage." OFF)
-  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -DUNIT_TEST")
+  option(CODECOV "Enable code coverage infrastructure." OFF)
+
+  # regression tests
+  option(REG_TEST "Enable regression test infrastructure." ON)
+
+  # unit tests
+  option(UNIT_TEST "Enable unit test infrastructure." ON)
+  if(UNIT_TEST)
+    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -DUNIT_TEST")
+  endif()
+
 endif()
+
 option(BUILD_OPENFAST_SIMULINK_API "Enable building OpenFAST for use with Simulink" off)
 if(BUILD_OPENFAST_SIMULINK_API)
   set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -DCOMPILE_SIMULINK")
 endif()
+
+option(BUILD_DOCUMENTATION "Build documentation." OFF)
 
 # Setup Fortran Compiler options based on architecture/compiler
 set_fast_fortran()
@@ -83,6 +95,19 @@ endif()
 
 # Set the RPATH after configuring the install prefix
 include(${CMAKE_SOURCE_DIR}/cmake/set_rpath.cmake)
+
+### NOTE: All add_subdirectory commands should be after this ###
+if(REG_TEST)
+  add_subdirectory(reg_tests)
+endif()
+
+if(UNIT_TEST)
+  add_subdirectory(unit_tests)
+endif()
+
+if(BUILD_DOCUMENTATION)
+  add_subdirectory(docs)
+endif()
 
 ########################################################################
 # Build rules for OpenFAST Registry
@@ -159,21 +184,3 @@ configure_package_config_file(
   PATH_VARS INCLUDE_INSTALL_DIR LIB_INSTALL_DIR FTNMOD_INSTALL_DIR)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/OpenFASTConfig.cmake
   DESTINATION lib/cmake/OpenFAST)
-
-########################################################################
-
-# Option configuration
-if(BUILD_TESTING)
-  include(CTest)
-
-  # regression tests
-  add_subdirectory(reg_tests)
-
-  # unit tests
-  add_subdirectory(unit_tests)
-endif()
-
-option(BUILD_DOCUMENTATION "Build documentation." OFF)
-if(BUILD_DOCUMENTATION)
-  add_subdirectory(docs)
-endif()
